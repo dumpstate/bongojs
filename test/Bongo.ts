@@ -1,6 +1,6 @@
 import tap from 'tap'
 
-import { Bongo } from '../src'
+import { Bongo } from '../src/Bongo'
 
 
 let bongo: Bongo
