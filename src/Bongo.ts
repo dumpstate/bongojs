@@ -2,33 +2,53 @@ import { JTDDataType } from 'ajv/dist/jtd'
 import {
     Pool as PGPool,
     PoolClient as PGPoolClient,
+    PoolConfig as PGPoolConfig,
 } from 'pg'
 
 import { collection } from './collection'
+import { Logger, newLogger } from './logger'
 import { DocType } from './model'
 import { migrateUp } from './schema'
+
+
+function isPGPool(obj: any): obj is PGPool {
+    return obj && obj.hasOwnProperty('connect')
+}
 
 
 export class Bongo {
 
     public pg: PGPool
+    private logger: Logger
+
     private registry: Map<string, DocType<any>> = new Map()
+    private idPrefixes: Set<string> = new Set()
 
     constructor(
-        pgPool?: PGPool
+        pgPoolOrConfig?: PGPool | PGPoolConfig,
+        logger?: Logger,
     ) {
-        if (!pgPool) {
-            this.pg = new PGPool()
+        if (logger) {
+            this.logger = logger
+        } else {
+            this.logger = newLogger({
+                name: 'Bongo',
+                level: 'info',
+            })
+        }
+
+        if (isPGPool(pgPoolOrConfig)) {
+            this.pg = pgPoolOrConfig
+        } else {
+            this.pg = new PGPool(pgPoolOrConfig)
 
             process.on('SIGTERM', () => {
                 this.pg.end()
                     .catch(err => {
-                        console.error('Error during the shutdown', err)
+                        this.logger.error('Error during the shutdown', err)
                         process.exit(1)
                     })
             })
-        } else {
-            this.pg = pgPool
         }
     }
 
@@ -37,7 +57,20 @@ export class Bongo {
             throw new Error(`DocType ${doctype.name} already registered`)
         }
 
+        if (doctype.prefix) {
+            if (doctype.prefix.length > 3) {
+                throw new Error(`Id prefix cannot be longer than 3 characters: ${doctype.prefix}`)
+            }
+
+            if (this.idPrefixes.has(doctype.prefix)) {
+                throw new Error(`Prefix: ${doctype.prefix} already registered`)
+            }
+
+            this.idPrefixes.add(doctype.prefix)
+        }
+
         this.registry.set(doctype.name, doctype)
+
         const { schema } = doctype
         type DataType = JTDDataType<typeof schema>
 
@@ -46,7 +79,7 @@ export class Bongo {
 
     public async migrate() {
         if (this.registry.size === 0) {
-            console.warn('No doctypes registered when migrating')
+            this.logger.warn('No doctypes registered when migrating')
         }
 
         await migrateUp(this.pg)
