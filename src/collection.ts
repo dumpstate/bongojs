@@ -4,6 +4,7 @@ import {
     PoolClient as PGPoolClient,
 } from 'pg'
 
+import { DOCUMENT_TABLE } from './constants'
 import { nextId } from './ids'
 import { DocType } from './model'
 import { omit } from './utils'
@@ -11,7 +12,6 @@ import { omit } from './utils'
 
 export interface DocumentMeta {
     readonly id: string
-    readonly doctype: string
 }
 
 
@@ -43,11 +43,10 @@ export function collection<S, T>(
             throw new Error(`ValidationError: ${JSON.stringify(obj)}`)
         }
 
-        return {
+        return Object.seal({
             ...obj,
             get id(): string { return id },
-            get doctype(): string { return doctype.name },
-        }
+        })
     }
 
     function exec<T>(fn: (conn: PGPoolClient) => Promise<T>) {
@@ -73,7 +72,7 @@ export function collection<S, T>(
             const res = await conn.query(
                 `
                     SELECT id, doc
-                    FROM bongo_documents
+                    FROM ${DOCUMENT_TABLE}
                     WHERE
                         id = $1 AND
                         doctype = $2
@@ -108,11 +107,26 @@ export function collection<S, T>(
         )
     }
 
+    function deleteById(id: string) {
+        return exec(async conn => {
+            const res = await conn.query(
+                `
+                    DELETE FROM ${DOCUMENT_TABLE}
+                    WHERE id = $1 AND
+                          doctype = $2
+                `,
+                [id, doctype.name],
+            )
+
+            return res.rowCount === 1
+        })
+    }
+
     function drop() {
         return exec(async conn => {
             const res = await conn.query(
                 `
-                    DELETE FROM bongo_documents
+                    DELETE FROM ${DOCUMENT_TABLE}
                     WHERE doctype = $1
                 `,
                 [doctype.name],
@@ -132,13 +146,13 @@ export function collection<S, T>(
         return exec(async conn => {
             const res = await conn.query(
                 `
-                    INSERT INTO bongo_documents (id, doctype, doc)
+                    INSERT INTO ${DOCUMENT_TABLE} (id, doctype, doc)
                     VALUES ($1, $2, $3)
                     ON CONFLICT (id, doctype)
                     DO
                         UPDATE SET doc = $3
                 `,
-                [obj.id, obj.doctype, doc],
+                [obj.id, doctype.name, doc],
             )
 
             if (res.rowCount !== 1) {
@@ -152,6 +166,7 @@ export function collection<S, T>(
     function factory(conn: PGPoolClient | undefined | null) {
         return {
             create: (obj: T) => create(obj)(conn),
+            deleteById: (id: string) => deleteById(id)(conn),
             drop: () => drop()(conn),
             getById: (id: string) => getById(id)(conn),
             save: (obj: T & DocumentMeta) => save(obj)(conn),
