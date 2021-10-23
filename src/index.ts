@@ -1,1 +1,2 @@
-console.log('Yellow!');
+export * from './Bongo'
+export * from './model'

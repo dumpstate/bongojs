@@ -15,3 +15,12 @@ BongoJS is a try to:
 * make using document model on PostgreSQL as easy as on MongoDB.
 
 It's a [mongoose](https://mongoosejs.com/) for PostgreSQL.
+
+## Running Tests
+
+To execute the tests, you need PostgreSQL running with user `bongo` and database `bongo_db`:
+
+    createuser bongo
+    createdb -O bongo bongo_db
+
+You can also use provided `docker-compose.yml`: `docker-compose up`.
