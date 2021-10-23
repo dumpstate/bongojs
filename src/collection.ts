@@ -4,8 +4,9 @@ import {
     PoolClient as PGPoolClient,
 } from 'pg'
 
+import { nextId } from './ids'
 import { DocType } from './model'
-import { nextId, omit } from './utils'
+import { omit } from './utils'
 
 
 export interface DocumentMeta {

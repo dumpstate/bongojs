@@ -23,10 +23,10 @@
     "pg": "8.x"
   },
   "dependencies": {
-    "ajv": "^8.6.3",
-    "nanoid": "^3.1.30"
+    "ajv": "^8.6.3"
   },
   "optionalDependencies": {
+    "nanoid": "^3.1.30",
     "pino": "^7.0.3"
   }
 }
