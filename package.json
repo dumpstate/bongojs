@@ -1,36 +1,39 @@
 {
-  "name": "bongojs",
-  "version": "0.1.0",
-  "description": "PostgreSQL JSON document modelling tool for node.js",
-  "main": "index.js",
-  "scripts": {
-    "build": "tsc --project tsconfig.json",
-    "build:test": "tsc --project test.tsconfig.json",
-    "test": "npm run build:test && PGUSER=bongo PGHOST=localhost PGDATABASE=bongo_db tap libtest/test/**/*.js"
-  },
-  "author": "asadowski@mailbox.org",
-  "license": "MIT",
-  "devDependencies": {
-    "@types/nanoid": "^3.0.0",
-    "@types/pg": "^8.6.1",
-    "@types/pino": "^6.3.12",
-    "@types/tap": "^15.0.5",
-    "pg": "^8.7.1",
-    "prettier": "2.4.1",
-    "tap": "^15.0.10",
-    "typescript": "^4.4.3"
-  },
-  "peerDependencies": {
-    "pg": "8.x"
-  },
-  "dependencies": {
-    "ajv": "^8.6.3"
-  },
-  "optionalDependencies": {
-    "nanoid": "^3.1.30",
-    "pino": "^7.0.3"
-  },
-  "tap": {
-    "check-coverage": false
-  }
+	"name": "bongojs",
+	"version": "0.1.0",
+	"description": "PostgreSQL JSON document modelling tool for node.js",
+	"main": "index.js",
+	"scripts": {
+		"build": "tsc --project tsconfig.json",
+		"build:test": "tsc --project test.tsconfig.json",
+		"lint": "npm run style:check",
+		"style:check": "prettier --check .",
+		"style:fix": "prettier --write .",
+		"test": "npm run build:test && PGUSER=bongo PGHOST=localhost PGDATABASE=bongo_db tap libtest/test/**/*.js"
+	},
+	"author": "asadowski@mailbox.org",
+	"license": "MIT",
+	"devDependencies": {
+		"@types/nanoid": "^3.0.0",
+		"@types/pg": "^8.6.1",
+		"@types/pino": "^6.3.12",
+		"@types/tap": "^15.0.5",
+		"pg": "^8.7.1",
+		"prettier": "2.4.1",
+		"tap": "^15.0.10",
+		"typescript": "^4.4.3"
+	},
+	"peerDependencies": {
+		"pg": "8.x"
+	},
+	"dependencies": {
+		"ajv": "^8.6.3"
+	},
+	"optionalDependencies": {
+		"nanoid": "^3.1.30",
+		"pino": "^7.0.3"
+	},
+	"tap": {
+		"check-coverage": false
+	}
 }

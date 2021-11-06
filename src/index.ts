@@ -1,2 +1,2 @@
-export * from './Bongo'
-export * from './model'
+export * from "./Bongo"
+export * from "./model"

@@ -1,111 +1,106 @@
-import { JTDDataType } from 'ajv/dist/jtd'
+import { JTDDataType } from "ajv/dist/jtd"
 import {
-    Pool as PGPool,
-    PoolClient as PGPoolClient,
-    PoolConfig as PGPoolConfig,
-} from 'pg'
+	Pool as PGPool,
+	PoolClient as PGPoolClient,
+	PoolConfig as PGPoolConfig,
+} from "pg"
 
-import { collection } from './collection'
-import { Logger, newLogger } from './logger'
-import { DocType } from './model'
-import { migrateUp } from './schema'
-
+import { collection } from "./collection"
+import { Logger, newLogger } from "./logger"
+import { DocType } from "./model"
+import { migrateUp } from "./schema"
 
 function isPGPool(obj: any): obj is PGPool {
-    return obj && obj.hasOwnProperty('connect')
+	return obj && obj.hasOwnProperty("connect")
 }
 
-
 export class Bongo {
+	public pg: PGPool
+	private logger: Logger
 
-    public pg: PGPool
-    private logger: Logger
+	private registry: Map<string, DocType<any>> = new Map()
+	private idPrefixes: Set<string> = new Set()
 
-    private registry: Map<string, DocType<any>> = new Map()
-    private idPrefixes: Set<string> = new Set()
+	constructor(pgPoolOrConfig?: PGPool | PGPoolConfig, logger?: Logger) {
+		if (logger) {
+			this.logger = logger
+		} else {
+			this.logger = newLogger({
+				name: "Bongo",
+				level: "info",
+			})
+		}
 
-    constructor(
-        pgPoolOrConfig?: PGPool | PGPoolConfig,
-        logger?: Logger,
-    ) {
-        if (logger) {
-            this.logger = logger
-        } else {
-            this.logger = newLogger({
-                name: 'Bongo',
-                level: 'info',
-            })
-        }
+		if (isPGPool(pgPoolOrConfig)) {
+			this.pg = pgPoolOrConfig
+		} else {
+			this.pg = new PGPool(pgPoolOrConfig)
 
-        if (isPGPool(pgPoolOrConfig)) {
-            this.pg = pgPoolOrConfig
-        } else {
-            this.pg = new PGPool(pgPoolOrConfig)
+			process.on("SIGTERM", () => {
+				this.pg.end().catch((err) => {
+					this.logger.error("Error during the shutdown", err)
+					process.exit(1)
+				})
+			})
+		}
+	}
 
-            process.on('SIGTERM', () => {
-                this.pg.end()
-                    .catch(err => {
-                        this.logger.error('Error during the shutdown', err)
-                        process.exit(1)
-                    })
-            })
-        }
-    }
+	public collection<S>(doctype: DocType<S>) {
+		if (this.registry.has(doctype.name)) {
+			throw new Error(`DocType ${doctype.name} already registered`)
+		}
 
-    public collection<S>(doctype: DocType<S>) {
-        if (this.registry.has(doctype.name)) {
-            throw new Error(`DocType ${doctype.name} already registered`)
-        }
+		if (doctype.prefix) {
+			if (doctype.prefix.length > 3) {
+				throw new Error(
+					`Id prefix cannot be longer than 3 characters: ${doctype.prefix}`
+				)
+			}
 
-        if (doctype.prefix) {
-            if (doctype.prefix.length > 3) {
-                throw new Error(`Id prefix cannot be longer than 3 characters: ${doctype.prefix}`)
-            }
+			if (this.idPrefixes.has(doctype.prefix)) {
+				throw new Error(`Prefix: ${doctype.prefix} already registered`)
+			}
 
-            if (this.idPrefixes.has(doctype.prefix)) {
-                throw new Error(`Prefix: ${doctype.prefix} already registered`)
-            }
+			this.idPrefixes.add(doctype.prefix)
+		}
 
-            this.idPrefixes.add(doctype.prefix)
-        }
+		this.registry.set(doctype.name, doctype)
 
-        this.registry.set(doctype.name, doctype)
+		const { schema } = doctype
+		type DataType = JTDDataType<typeof schema>
 
-        const { schema } = doctype
-        type DataType = JTDDataType<typeof schema>
+		return collection<S, DataType>(this.pg, doctype)
+	}
 
-        return collection<S, DataType>(this.pg, doctype)
-    }
+	public async migrate() {
+		if (this.registry.size === 0) {
+			this.logger.warn("No doctypes registered when migrating")
+		}
 
-    public async migrate() {
-        if (this.registry.size === 0) {
-            this.logger.warn('No doctypes registered when migrating')
-        }
+		await migrateUp(this.pg)
+	}
 
-        await migrateUp(this.pg)
-    }
+	public async close() {
+		return this.pg.end()
+	}
 
-    public async close() {
-        return this.pg.end()
-    }
+	public async transaction<T>(cbk: (txClient: PGPoolClient) => Promise<T>) {
+		const conn = await this.pg.connect()
 
-    public async transaction<T>(cbk: (txClient: PGPoolClient) => Promise<T>) {
-        const conn = await this.pg.connect()
+		try {
+			await conn.query("BEGIN")
 
-        try {
-            await conn.query('BEGIN')
+			const res = await cbk(conn)
 
-            const res = await cbk(conn)
+			await conn.query("COMMIT")
 
-            await conn.query('COMMIT')
+			return res
+		} catch (err) {
+			await conn.query("ROLLBACK")
 
-            return res
-        } catch (err) {
-            await conn.query('ROLLBACK')
-
-            throw err
-        } finally {
-            conn.release()
-        }
-    }
+			throw err
+		} finally {
+			conn.release()
+		}
+	}
 }

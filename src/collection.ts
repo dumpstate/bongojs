@@ -1,247 +1,239 @@
-import Ajv from 'ajv/dist/jtd'
-import {
-    Pool as PGPool,
-    PoolClient as PGPoolClient,
-} from 'pg'
+import Ajv from "ajv/dist/jtd"
+import { Pool as PGPool, PoolClient as PGPoolClient } from "pg"
 
-import { DOCUMENT_TABLE } from './constants'
-import { nextId } from './ids'
-import { DocType } from './model'
-import { whereClause } from './query'
-import { flatten, omit } from './utils'
-
+import { DOCUMENT_TABLE } from "./constants"
+import { nextId } from "./ids"
+import { DocType } from "./model"
+import { whereClause } from "./query"
+import { flatten, omit } from "./utils"
 
 export interface DocumentMeta {
-    readonly id: string
+	readonly id: string
 }
-
 
 export interface Collection<T> {
-    create: (obj: T) => Promise<T & DocumentMeta>
-    createAll: (objs: T[]) => Promise<(T & DocumentMeta)[]>
-    deleteById: (id: string) => Promise<boolean>
-    drop: () => Promise<number>
-    find: (query: any, limit?: number, offset?: number) => Promise<(T & DocumentMeta)[]>
-    findById: (id: string) => Promise<T>
-    save: (obj: T & DocumentMeta) => Promise<T & DocumentMeta>
+	create: (obj: T) => Promise<T & DocumentMeta>
+	createAll: (objs: T[]) => Promise<(T & DocumentMeta)[]>
+	deleteById: (id: string) => Promise<boolean>
+	drop: () => Promise<number>
+	find: (
+		query: any,
+		limit?: number,
+		offset?: number
+	) => Promise<(T & DocumentMeta)[]>
+	findById: (id: string) => Promise<T>
+	save: (obj: T & DocumentMeta) => Promise<T & DocumentMeta>
 }
-
 
 export interface ExtCollection<T> extends Collection<T> {
-    on: (conn: PGPoolClient) => Collection<T>
+	on: (conn: PGPoolClient) => Collection<T>
 }
 
-
 export function collection<S, T>(
-    pg: PGPool,
-    doctype: DocType<S>,
+	pg: PGPool,
+	doctype: DocType<S>
 ): ExtCollection<T> {
-    const ajv = new Ajv()
-    const validate = ajv.compile<T>({
-        ...doctype.schema,
-        additionalProperties: false,
-    })
+	const ajv = new Ajv()
+	const validate = ajv.compile<T>({
+		...doctype.schema,
+		additionalProperties: false,
+	})
 
-    function instance(id: string, obj: T) {
-        if (!validate(obj)) {
-            throw new Error(`ValidationError: ${JSON.stringify(obj)}`)
-        }
+	function instance(id: string, obj: T) {
+		if (!validate(obj)) {
+			throw new Error(`ValidationError: ${JSON.stringify(obj)}`)
+		}
 
-        return Object.seal({
-            ...obj,
-            id,
-        })
-    }
+		return Object.seal({
+			...obj,
+			id,
+		})
+	}
 
-    function exec<T>(fn: (conn: PGPoolClient) => Promise<T>) {
-        return async (conn: PGPoolClient | undefined | null) => {
-            let nextConn = conn
-    
-            if (!nextConn) {
-                nextConn = await pg.connect()
-            }
+	function exec<T>(fn: (conn: PGPoolClient) => Promise<T>) {
+		return async (conn: PGPoolClient | undefined | null) => {
+			let nextConn = conn
 
-            try {
-                return await fn(nextConn)
-            } finally {
-                if (!conn) {
-                    nextConn.release()
-                }
-            }
-        }
-    }
+			if (!nextConn) {
+				nextConn = await pg.connect()
+			}
 
-    function find(
-        query: any,
-        limit?: number,
-        offset?: number,
-    ) {
-        return exec(async conn => {
-            const { text, values } = whereClause(query)
-            const res = await conn.query(
-                `
+			try {
+				return await fn(nextConn)
+			} finally {
+				if (!conn) {
+					nextConn.release()
+				}
+			}
+		}
+	}
+
+	function find(query: any, limit?: number, offset?: number) {
+		return exec(async (conn) => {
+			const { text, values } = whereClause(query)
+			const res = await conn.query(
+				`
                     SELECT id, doc
                     FROM ${DOCUMENT_TABLE}
                     WHERE doctype = $${values.length + 1} AND (${text})
                     LIMIT $${values.length + 2}
                     OFFSET $${values.length + 3}
                 `,
-                values.concat([doctype.name, limit, offset]),
-            )
+				values.concat([doctype.name, limit, offset])
+			)
 
-            return res.rows
-                .map(row => instance(row.id, row.doc))
-        })
-    }
+			return res.rows.map((row) => instance(row.id, row.doc))
+		})
+	}
 
-    function findById(id: string) {
-        return exec(async conn => {
-            const res = await conn.query(
-                `
+	function findById(id: string) {
+		return exec(async (conn) => {
+			const res = await conn.query(
+				`
                     SELECT id, doc
                     FROM ${DOCUMENT_TABLE}
                     WHERE
                         id = $1 AND
                         doctype = $2
                 `,
-                [id, doctype.name],
-            )
+				[id, doctype.name]
+			)
 
-            if(res.rowCount > 1) {
-                throw new Error('Inconsistent data')
-            }
+			if (res.rowCount > 1) {
+				throw new Error("Inconsistent data")
+			}
 
-            if (res.rowCount === 0) {
-                throw new Error(`Model not found: ${id}`)
-            }
+			if (res.rowCount === 0) {
+				throw new Error(`Model not found: ${id}`)
+			}
 
-            const [obj] = res.rows
+			const [obj] = res.rows
 
-            return instance(obj.id, obj.doc)
-        })
-    }
+			return instance(obj.id, obj.doc)
+		})
+	}
 
-    function create(obj: T) {
-        if (!validate(obj)) {
-            throw new Error('ValidationError')
-        }
+	function create(obj: T) {
+		if (!validate(obj)) {
+			throw new Error("ValidationError")
+		}
 
-        return save(
-            instance(
-                nextId(doctype),
-                obj,
-            ),
-        )
-    }
+		return save(instance(nextId(doctype), obj))
+	}
 
-    function createAll(objs: T[]): (conn: PGPoolClient | null | undefined) => Promise<(T & DocumentMeta)[]> {
-        return async (conn: PGPoolClient | null | undefined) => {
-            let nextConn = conn
+	function createAll(
+		objs: T[]
+	): (
+		conn: PGPoolClient | null | undefined
+	) => Promise<(T & DocumentMeta)[]> {
+		return async (conn: PGPoolClient | null | undefined) => {
+			let nextConn = conn
 
-            if (!nextConn) {
-                nextConn = await pg.connect()
-            }
+			if (!nextConn) {
+				nextConn = await pg.connect()
+			}
 
-            try {
-                if (!conn) {
-                    await nextConn.query('BEGIN')
-                }
+			try {
+				if (!conn) {
+					await nextConn.query("BEGIN")
+				}
 
-                const res = flatten(
-                    objs.map(obj => save(
-                        instance(nextId(doctype), obj)
-                    )(nextConn)),
-                )
+				const res = flatten(
+					objs.map((obj) =>
+						save(instance(nextId(doctype), obj))(nextConn)
+					)
+				)
 
-                if (!conn) {
-                    await nextConn.query('COMMIT')
-                }
+				if (!conn) {
+					await nextConn.query("COMMIT")
+				}
 
-                return res
-            } catch (err) {
-                if (!conn) {
-                    await nextConn.query('ROLLBACK')
-                }
+				return res
+			} catch (err) {
+				if (!conn) {
+					await nextConn.query("ROLLBACK")
+				}
 
-                throw err
-            } finally {
-                if (!conn) {
-                    nextConn.release()
-                }
-            }
-        }
-    }
+				throw err
+			} finally {
+				if (!conn) {
+					nextConn.release()
+				}
+			}
+		}
+	}
 
-    function deleteById(id: string) {
-        return exec(async conn => {
-            const res = await conn.query(
-                `
+	function deleteById(id: string) {
+		return exec(async (conn) => {
+			const res = await conn.query(
+				`
                     DELETE FROM ${DOCUMENT_TABLE}
                     WHERE id = $1 AND
                           doctype = $2
                 `,
-                [id, doctype.name],
-            )
+				[id, doctype.name]
+			)
 
-            return res.rowCount === 1
-        })
-    }
+			return res.rowCount === 1
+		})
+	}
 
-    function drop() {
-        return exec(async conn => {
-            const res = await conn.query(
-                `
+	function drop() {
+		return exec(async (conn) => {
+			const res = await conn.query(
+				`
                     DELETE FROM ${DOCUMENT_TABLE}
                     WHERE doctype = $1
                 `,
-                [doctype.name],
-            )
+				[doctype.name]
+			)
 
-            return res.rowCount
-        })
-    }
+			return res.rowCount
+		})
+	}
 
-    function save(obj: T & DocumentMeta) {
-        const doc = omit(obj, ['id', 'doctype'])
+	function save(obj: T & DocumentMeta) {
+		const doc = omit(obj, ["id", "doctype"])
 
-        if (!validate(doc)) {
-            throw new Error('ValidationError')
-        }
+		if (!validate(doc)) {
+			throw new Error("ValidationError")
+		}
 
-        return exec(async conn => {
-            const res = await conn.query(
-                `
+		return exec(async (conn) => {
+			const res = await conn.query(
+				`
                     INSERT INTO ${DOCUMENT_TABLE} (id, doctype, doc)
                     VALUES ($1, $2, $3)
                     ON CONFLICT (id, doctype)
                     DO
                         UPDATE SET doc = $3
                 `,
-                [obj.id, doctype.name, doc],
-            )
+				[obj.id, doctype.name, doc]
+			)
 
-            if (res.rowCount !== 1) {
-                throw new Error(`Inconsistent update, expected one row update`)
-            }
+			if (res.rowCount !== 1) {
+				throw new Error(`Inconsistent update, expected one row update`)
+			}
 
-            return obj
-        })
-    }
+			return obj
+		})
+	}
 
-    function factory(conn: PGPoolClient | undefined | null) {
-        return {
-            create: (obj: T) => create(obj)(conn),
-            createAll: (objs: T[]) => createAll(objs)(conn),
-            deleteById: (id: string) => deleteById(id)(conn),
-            drop: () => drop()(conn),
-            findById: (id: string) => findById(id)(conn),
-            find: (query: any, limit?: number, offset?: number) => find(query, limit, offset)(conn),
-            save: (obj: T & DocumentMeta) => save(obj)(conn),
-        }
-    }
+	function factory(conn: PGPoolClient | undefined | null) {
+		return {
+			create: (obj: T) => create(obj)(conn),
+			createAll: (objs: T[]) => createAll(objs)(conn),
+			deleteById: (id: string) => deleteById(id)(conn),
+			drop: () => drop()(conn),
+			findById: (id: string) => findById(id)(conn),
+			find: (query: any, limit?: number, offset?: number) =>
+				find(query, limit, offset)(conn),
+			save: (obj: T & DocumentMeta) => save(obj)(conn),
+		}
+	}
 
-    return {
-        ...factory(null),
-        on: (conn: PGPoolClient) => factory(conn),
-    }
+	return {
+		...factory(null),
+		on: (conn: PGPoolClient) => factory(conn),
+	}
 }

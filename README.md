@@ -9,10 +9,11 @@ PostgreSQL is an outstanding product. It covers vast spectrum of different use c
 PostgreSQL, with JSON and JSONB types, does provide a first class support for document modelling. Unfortunately the learning curve for the JSON-path-like syntax is relatively steep (not a standard SQL) plus is doesn't solve problems like schema validation, or database schema management.
 
 BongoJS is a try to:
-* abstract away complexities related with using JSON/JSONB on PostgreSQL,
-* introduce schema validation for JSON/JSONB columns,
-* minimize complexity related to database schema management,
-* make using document model on PostgreSQL as easy as on MongoDB.
+
+-   abstract away complexities related with using JSON/JSONB on PostgreSQL,
+-   introduce schema validation for JSON/JSONB columns,
+-   minimize complexity related to database schema management,
+-   make using document model on PostgreSQL as easy as on MongoDB.
 
 It's a [mongoose](https://mongoosejs.com/) for PostgreSQL.
 
