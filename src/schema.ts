@@ -12,7 +12,7 @@ const REVISIONS: Revision[] = [
 	{
 		id: 1,
 		up: `
-            CREATE TABLE ${REVISION_TABLE} (
+            CREATE TABLE IF NOT EXISTS ${REVISION_TABLE} (
                 ${REVISION_COLUMN} INTEGER PRIMARY KEY
             )
         `,
@@ -21,7 +21,7 @@ const REVISIONS: Revision[] = [
 	{
 		id: 2,
 		up: `
-            CREATE TABLE ${DOCUMENT_TABLE} (
+            CREATE TABLE IF NOT EXISTS ${DOCUMENT_TABLE} (
                 id CHAR(24),
                 doctype VARCHAR,
                 doc JSONB NOT NULL,
