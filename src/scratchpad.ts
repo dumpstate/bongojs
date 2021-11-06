@@ -27,9 +27,17 @@ async function main() {
 
     await foo.save(instance)
 
-    const another = await foo.getById(instance.id)
+    const another = await foo.findById(instance.id)
 
     console.log(`Another instance: ${JSON.stringify(another)}`)
+
+    const queried = await foo.find({
+        // foo: {ooo: 22},
+        foo: 22,
+        // bar: 'yeah',
+    }, 2)
+
+    console.log(`All(foo = 22): ${JSON.stringify(queried)}`)
 
     await bongo.close()
 }

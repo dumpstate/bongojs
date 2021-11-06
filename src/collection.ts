@@ -7,7 +7,8 @@ import {
 import { DOCUMENT_TABLE } from './constants'
 import { nextId } from './ids'
 import { DocType } from './model'
-import { omit } from './utils'
+import { whereClause } from './query'
+import { flatten, omit } from './utils'
 
 
 export interface DocumentMeta {
@@ -17,8 +18,11 @@ export interface DocumentMeta {
 
 export interface Collection<T> {
     create: (obj: T) => Promise<T & DocumentMeta>
+    createAll: (objs: T[]) => Promise<(T & DocumentMeta)[]>
+    deleteById: (id: string) => Promise<boolean>
     drop: () => Promise<number>
-    getById: (id: string) => Promise<T>
+    find: (query: any, limit?: number, offset?: number) => Promise<(T & DocumentMeta)[]>
+    findById: (id: string) => Promise<T>
     save: (obj: T & DocumentMeta) => Promise<T & DocumentMeta>
 }
 
@@ -45,7 +49,7 @@ export function collection<S, T>(
 
         return Object.seal({
             ...obj,
-            get id(): string { return id },
+            id,
         })
     }
 
@@ -67,7 +71,30 @@ export function collection<S, T>(
         }
     }
 
-    function getById(id: string) {
+    function find(
+        query: any,
+        limit?: number,
+        offset?: number,
+    ) {
+        return exec(async conn => {
+            const { text, values } = whereClause(query)
+            const res = await conn.query(
+                `
+                    SELECT id, doc
+                    FROM ${DOCUMENT_TABLE}
+                    WHERE doctype = $${values.length + 1} AND (${text})
+                    LIMIT $${values.length + 2}
+                    OFFSET $${values.length + 3}
+                `,
+                values.concat([doctype.name, limit, offset]),
+            )
+
+            return res.rows
+                .map(row => instance(row.id, row.doc))
+        })
+    }
+
+    function findById(id: string) {
         return exec(async conn => {
             const res = await conn.query(
                 `
@@ -105,6 +132,44 @@ export function collection<S, T>(
                 obj,
             ),
         )
+    }
+
+    function createAll(objs: T[]): (conn: PGPoolClient | null | undefined) => Promise<(T & DocumentMeta)[]> {
+        return async (conn: PGPoolClient | null | undefined) => {
+            let nextConn = conn
+
+            if (!nextConn) {
+                nextConn = await pg.connect()
+            }
+
+            try {
+                if (!conn) {
+                    await nextConn.query('BEGIN')
+                }
+
+                const res = flatten(
+                    objs.map(obj => save(
+                        instance(nextId(doctype), obj)
+                    )(nextConn)),
+                )
+
+                if (!conn) {
+                    await nextConn.query('COMMIT')
+                }
+
+                return res
+            } catch (err) {
+                if (!conn) {
+                    await nextConn.query('ROLLBACK')
+                }
+
+                throw err
+            } finally {
+                if (!conn) {
+                    nextConn.release()
+                }
+            }
+        }
     }
 
     function deleteById(id: string) {
@@ -166,9 +231,11 @@ export function collection<S, T>(
     function factory(conn: PGPoolClient | undefined | null) {
         return {
             create: (obj: T) => create(obj)(conn),
+            createAll: (objs: T[]) => createAll(objs)(conn),
             deleteById: (id: string) => deleteById(id)(conn),
             drop: () => drop()(conn),
-            getById: (id: string) => getById(id)(conn),
+            findById: (id: string) => findById(id)(conn),
+            find: (query: any, limit?: number, offset?: number) => find(query, limit, offset)(conn),
             save: (obj: T & DocumentMeta) => save(obj)(conn),
         }
     }

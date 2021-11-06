@@ -11,3 +11,12 @@ export function omit(obj: any, keys: string[]) {
 
     return target
 }
+
+export function flatten<T>(prms: Promise<T>[]): Promise<T[]> {
+    return prms.reduce(
+        (acc, promise) => acc
+            .then((res: T[]) => promise
+                .then((partial: T) => res.concat([partial]))),
+        Promise.resolve([] as T[]),
+    )
+}
