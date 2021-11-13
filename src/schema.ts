@@ -76,6 +76,7 @@ async function setCurrentRevision(
 			`
                 INSERT INTO ${REVISION_TABLE}(${REVISION_COLUMN})
                 VALUES ($1)
+				ON CONFLICT DO NOTHING
             `,
 			[rev.id]
 		)
