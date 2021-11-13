@@ -12,10 +12,6 @@ const foo = bongo.collection({
 	} as const,
 })
 
-tap.before(async () => {
-	await bongo.migrate()
-})
-
 tap.afterEach(async () => {
 	await foo.drop()
 })

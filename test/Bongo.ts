@@ -6,7 +6,6 @@ let bongo: Bongo
 
 tap.beforeEach(async () => {
 	bongo = new Bongo()
-	await bongo.migrate()
 })
 
 tap.afterEach(async () => {

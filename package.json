@@ -2,7 +2,10 @@
 	"name": "bongojs",
 	"version": "0.1.0",
 	"description": "PostgreSQL JSON document modelling tool for node.js",
-	"main": "index.js",
+	"main": "lib/index.js",
+	"bin": {
+		"bongojs": "./lib/cli.js"
+	},
 	"scripts": {
 		"build": "tsc --project tsconfig.json",
 		"build:test": "tsc --project test.tsconfig.json",
@@ -27,7 +30,8 @@
 		"pg": "8.x"
 	},
 	"dependencies": {
-		"ajv": "^8.6.3"
+		"ajv": "^8.6.3",
+		"commander": "^8.3.0"
 	},
 	"optionalDependencies": {
 		"nanoid": "^3.1.30",

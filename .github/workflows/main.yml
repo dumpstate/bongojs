@@ -9,7 +9,7 @@ on:
     workflow_dispatch:
 
 jobs:
-    build:
+    build_and_test:
         runs-on: ubuntu-latest
 
         steps:
@@ -18,9 +18,15 @@ jobs:
               run: docker-compose up -d
             - name: Install Dependencies
               run: npm install
+            - name: Build
+              run: npm run build && npm link
+            - name: Apply DB Migrations
+              env:
+                  PGUSER: bongo
+                  PGHOST: localhost
+                  PGDATABASE: bongo_db
+              run: bongojs migrate up
             - name: Lint
               run: npm run lint
             - name: Test
               run: npm run test
-            - name: Build
-              run: npm run build
