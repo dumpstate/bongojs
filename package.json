@@ -10,6 +10,7 @@
 		"build": "tsc --project tsconfig.json",
 		"build:test": "tsc --project test.tsconfig.json",
 		"lint": "npm run style:check",
+		"prepare": "husky install",
 		"style:check": "prettier --check .",
 		"style:fix": "prettier --write .",
 		"test": "npm run build:test && PGUSER=bongo PGHOST=localhost PGDATABASE=bongo_db tap libtest/test/**/*.js"
@@ -21,6 +22,7 @@
 		"@types/pg": "^8.6.1",
 		"@types/pino": "^6.3.12",
 		"@types/tap": "^15.0.5",
+		"husky": "^7.0.4",
 		"pg": "^8.7.1",
 		"prettier": "2.4.1",
 		"tap": "^15.0.10",
