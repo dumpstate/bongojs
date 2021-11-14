@@ -22,6 +22,7 @@ export interface Collection<T> {
 		offset?: number
 	) => Promise<(T & DocumentMeta)[]>
 	findById: (id: string) => Promise<T>
+	findOne: (query: any) => Promise<(T & DocumentMeta) | null>
 	save: (obj: T & DocumentMeta) => Promise<T & DocumentMeta>
 }
 
@@ -84,6 +85,22 @@ export function collection<S, T>(
 
 			return res.rows.map((row) => instance(row.id, row.doc))
 		})
+	}
+
+	function findOne(query: any) {
+		return async (conn: PGPoolClient | undefined | null) => {
+			const res = await find(query)(conn)
+
+			if (res.length > 1) {
+				throw new Error("Too many items found")
+			}
+
+			if (res.length === 0) {
+				return null
+			}
+
+			return res[0] as T & DocumentMeta
+		}
 	}
 
 	function findById(id: string) {
@@ -225,9 +242,10 @@ export function collection<S, T>(
 			createAll: (objs: T[]) => createAll(objs)(conn),
 			deleteById: (id: string) => deleteById(id)(conn),
 			drop: () => drop()(conn),
-			findById: (id: string) => findById(id)(conn),
 			find: (query: any, limit?: number, offset?: number) =>
 				find(query, limit, offset)(conn),
+			findById: (id: string) => findById(id)(conn),
+			findOne: (query: any) => findOne(query)(conn),
 			save: (obj: T & DocumentMeta) => save(obj)(conn),
 		}
 	}

@@ -13,7 +13,7 @@
 		"prepare": "husky install",
 		"style:check": "prettier --check .",
 		"style:fix": "prettier --write .",
-		"test": "npm run build:test && PGUSER=bongo PGHOST=localhost PGDATABASE=bongo_db tap libtest/test/**/*.js"
+		"test": "npm run build:test && PGUSER=bongo PGHOST=localhost PGDATABASE=bongo_db tap libtest/test/*.js libtest/test/**/*.js"
 	},
 	"author": "asadowski@mailbox.org",
 	"license": "MIT",
