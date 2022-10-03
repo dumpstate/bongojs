@@ -1,6 +1,6 @@
 interface SqlClause {
 	readonly text: string
-	readonly values: any[]
+	readonly values: (string | number | null)[]
 }
 
 type LogicalOp = "AND" | "OR"

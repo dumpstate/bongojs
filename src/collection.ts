@@ -1,7 +1,7 @@
 import Ajv from "ajv/dist/jtd"
 import { Pool as PGPool, PoolClient as PGPoolClient } from "pg"
 
-import { DOCUMENT_TABLE } from "./constants"
+import { DEFAULT_LIMIT, DOCUMENT_TABLE } from "./constants"
 import { nextId } from "./ids"
 import { DocType } from "./model"
 import { Query, whereClause } from "./query"
@@ -69,7 +69,11 @@ export function collection<S, T>(
 		}
 	}
 
-	function find(query: Query<T>, limit?: number, offset?: number) {
+	function find(
+		query: Query<T>,
+		limit: number = DEFAULT_LIMIT,
+		offset: number = 0
+	) {
 		return exec(async (conn) => {
 			const { text, values } = whereClause<T>(query)
 			const res = await conn.query(
