@@ -15,29 +15,27 @@
 		"style:fix": "prettier --write .",
 		"test": "npm run build:test && PGUSER=bongo PGHOST=localhost PGDATABASE=bongo_db tap libtest/test/*.js libtest/test/**/*.js"
 	},
-	"author": "asadowski@mailbox.org",
+	"author": "Albert Sadowski <asadowski@mailbox.org>",
 	"license": "MIT",
 	"devDependencies": {
-		"@types/nanoid": "^3.0.0",
-		"@types/pg": "^8.6.1",
-		"@types/pino": "^6.3.12",
-		"@types/tap": "^15.0.5",
-		"husky": "^7.0.4",
-		"pg": "^8.7.1",
-		"prettier": "2.4.1",
-		"tap": "^15.0.10",
-		"typescript": "^4.4.3"
+		"@types/pg": "^8.6.5",
+		"@types/tap": "^15.0.7",
+		"husky": "^8.0.1",
+		"pg": "^8.8.0",
+		"prettier": "2.7.1",
+		"tap": "^16.3.0",
+		"typescript": "^4.8.4"
 	},
 	"peerDependencies": {
 		"pg": "8.x"
 	},
 	"dependencies": {
-		"ajv": "^8.6.3",
-		"commander": "^8.3.0"
+		"ajv": "^8.11.0",
+		"commander": "^9.4.1"
 	},
 	"optionalDependencies": {
-		"nanoid": "^3.1.30",
-		"pino": "^7.0.3"
+		"nanoid": "^4.0.0",
+		"pino": "^8.6.1"
 	},
 	"tap": {
 		"check-coverage": false

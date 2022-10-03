@@ -15,8 +15,6 @@ BongoJS is a try to:
 -   minimize complexity related to database schema management,
 -   make using document model on PostgreSQL as easy as on MongoDB.
 
-It's a [mongoose](https://mongoosejs.com/) for PostgreSQL.
-
 ## Running Tests
 
 To execute the tests, you need PostgreSQL running with user `bongo` and database `bongo_db`:
