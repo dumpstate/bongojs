@@ -4,7 +4,7 @@ import { Pool as PGPool, PoolClient as PGPoolClient } from "pg"
 import { DOCUMENT_TABLE } from "./constants"
 import { nextId } from "./ids"
 import { DocType } from "./model"
-import { whereClause } from "./query"
+import { Query, whereClause } from "./query"
 import { flatten, omit } from "./utils"
 
 export interface DocumentMeta {
@@ -17,12 +17,12 @@ export interface Collection<T> {
 	deleteById: (id: string) => Promise<boolean>
 	drop: () => Promise<number>
 	find: (
-		query: any,
+		query: Query<T>,
 		limit?: number,
 		offset?: number
 	) => Promise<(T & DocumentMeta)[]>
 	findById: (id: string) => Promise<T>
-	findOne: (query: any) => Promise<(T & DocumentMeta) | null>
+	findOne: (query: Query<T>) => Promise<(T & DocumentMeta) | null>
 	save: (obj: T & DocumentMeta) => Promise<T & DocumentMeta>
 }
 
@@ -69,9 +69,9 @@ export function collection<S, T>(
 		}
 	}
 
-	function find(query: any, limit?: number, offset?: number) {
+	function find(query: Query<T>, limit?: number, offset?: number) {
 		return exec(async (conn) => {
-			const { text, values } = whereClause(query)
+			const { text, values } = whereClause<T>(query)
 			const res = await conn.query(
 				`
                     SELECT id, doc
@@ -87,7 +87,7 @@ export function collection<S, T>(
 		})
 	}
 
-	function findOne(query: any) {
+	function findOne(query: Query<T>) {
 		return async (conn: PGPoolClient | undefined | null) => {
 			const res = await find(query)(conn)
 
