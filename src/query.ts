@@ -1,6 +1,6 @@
-interface SqlClause {
+export interface SqlClause {
 	readonly text: string
-	readonly values: (string | number | null)[]
+	readonly values: (string | number | boolean | null)[]
 }
 
 type LogicalOp = "AND" | "OR"
@@ -71,7 +71,7 @@ type GteOp<Q> = { $gte: Q }
 type LtOp<Q> = { $lt: Q }
 type LteOp<Q> = { $lte: Q }
 
-export type Query<T> = QueryableProps<T> | BooleanOps<T>
+export type Query<T> = QueryableProps<T> | BooleanOps<T> | {}
 
 function reduce(clauses: SqlClause[], op: LogicalOp): SqlClause {
 	return clauses.reduce(
@@ -97,7 +97,7 @@ abstract class Match {
 class ExactMatch extends Match {
 	constructor(
 		public readonly key: string,
-		public readonly value: string | number
+		public readonly value: string | number | boolean
 	) {
 		super()
 	}
@@ -122,7 +122,11 @@ function match(key: string, value: any): Match {
 		throw new Error(`not implemented: ${JSON.stringify(value)}`)
 	}
 
-	if (typeof value === "string" || typeof value === "number") {
+	if (
+		typeof value === "string" ||
+		typeof value === "number" ||
+		typeof value === "boolean"
+	) {
 		return new ExactMatch(key, value)
 	}
 
