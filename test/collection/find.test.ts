@@ -127,4 +127,20 @@ test("collection.find", async (t) => {
 
 		t.match(actual, [{ foo: 1 }, { foo: 3, bar: 3 }, { foo: 4, bar: 3 }])
 	})
+
+	await t.test("find with greater than matcher", async (t) => {
+		await foo.createAll([
+			{ foo: 1 },
+			{ foo: 2, bar: 3 },
+			{ foo: 3, bar: 4 },
+			{ foo: 4, bar: 5 },
+			{ foo: 5 },
+		])
+
+		const actual = await foo.find({
+			$and: [{ foo: { $lt: 4 } }, { bar: { $gte: 4 } }],
+		})
+
+		t.match(actual, [{ foo: 3, bar: 4 }])
+	})
 })

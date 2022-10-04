@@ -72,6 +72,48 @@ const testCases: [Query<Entity>, SqlClause][] = [
 			values: [null, "asd", "dsa"],
 		},
 	],
+	[
+		{ foo: { $gt: 4 } },
+		{
+			text: "doc->>'foo' > $1",
+			values: [4],
+		},
+	],
+	[
+		{ foo: { $gte: 2 }, bar: { $eq: "asd" } },
+		{
+			text: "(doc->>'foo' >= $1 AND doc->>'bar' = $2)",
+			values: [2, "asd"],
+		},
+	],
+	[
+		{ foo: { $lt: 2 }, baz: { $ne: null } },
+		{
+			text: "(doc->>'foo' < $1 AND doc->>'baz' <> $2)",
+			values: [2, null],
+		},
+	],
+	[
+		{ foo: { $lte: 2 } },
+		{
+			text: "doc->>'foo' <= $1",
+			values: [2],
+		},
+	],
+	// [
+	// 	{ foo: { $in: [2, 3] } },
+	// 	{
+	// 		text: "doc->>'foo' IN ($1, $2)",
+	// 		values: [2, 3],
+	// 	},
+	// ],
+	// [
+	// 	{ bar: { $nin: ["asd", "dsa"] } },
+	// 	{
+	// 		text: "doc->>'foo' NOT IN ($1, $2)",
+	// 		values: ["asd", "dsa"],
+	// 	},
+	// ],
 ]
 
 testCases.forEach(([query, expected]) =>
