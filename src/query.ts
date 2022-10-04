@@ -114,23 +114,30 @@ class ExactMatch extends Match {
 }
 
 function match(key: string, value: any): Match {
-	if (key === "$or" || key === "$and") {
-		throw new Error("not implemented")
+	switch (key) {
+		case "$or":
+		case "$and":
+		case "$in":
+		case "$nin":
+		case "$eq":
+		case "$ne":
+		case "$gt":
+		case "$gte":
+		case "$lt":
+		case "$lte":
+			throw new Error("not implemented")
+		default:
+			switch (typeof value) {
+				case "string":
+				case "number":
+				case "boolean":
+					return new ExactMatch(key, value)
+				default:
+					throw new Error(
+						`unsupported match: ${key} -> ${JSON.stringify(value)}`
+					)
+			}
 	}
-
-	if (typeof value === "object") {
-		throw new Error(`not implemented: ${JSON.stringify(value)}`)
-	}
-
-	if (
-		typeof value === "string" ||
-		typeof value === "number" ||
-		typeof value === "boolean"
-	) {
-		return new ExactMatch(key, value)
-	}
-
-	throw new Error(`Unsupported match: ${key} -> ${JSON.stringify(value)}`)
 }
 
 export function whereClause<T>(
