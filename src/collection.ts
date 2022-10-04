@@ -80,7 +80,7 @@ export function collection<S, T>(
 				`
                     SELECT id, doc
                     FROM ${DOCUMENT_TABLE}
-                    WHERE doctype = $${values.length + 1} AND (${text})
+                    WHERE doctype = $${values.length + 1} AND ${text}
                     LIMIT $${values.length + 2}
                     OFFSET $${values.length + 3}
                 `,

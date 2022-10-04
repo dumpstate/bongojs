@@ -111,4 +111,20 @@ test("collection.find", async (t) => {
 			"Model not found: unknown-id"
 		)
 	})
+
+	await t.test("find with an alternative", async (t) => {
+		await foo.createAll([
+			{ foo: 1 },
+			{ foo: 2, bar: 2 },
+			{ foo: 3, bar: 3 },
+			{ foo: 4, bar: 3 },
+			{ foo: 5 },
+		])
+
+		const actual = await foo.find({
+			$or: [{ foo: 1 }, { bar: 3 }],
+		})
+
+		t.match(actual, [{ foo: 1 }, { foo: 3, bar: 3 }, { foo: 4, bar: 3 }])
+	})
 })

@@ -36,7 +36,7 @@ const testCases: [Query<Entity>, SqlClause][] = [
 			bar: "baz",
 		},
 		{
-			text: "doc->>'foo' = $1 AND (doc->>'bar' = $2)",
+			text: "(doc->>'foo' = $1 AND doc->>'bar' = $2)",
 			values: [123, "baz"],
 		},
 	],
@@ -47,8 +47,29 @@ const testCases: [Query<Entity>, SqlClause][] = [
 			baz: true,
 		},
 		{
-			text: "doc->>'foo' = $1 AND (doc->>'bar' = $2) AND (doc->>'baz' = $3)",
+			text: "(doc->>'foo' = $1 AND doc->>'bar' = $2 AND doc->>'baz' = $3)",
 			values: [123, "baz", true],
+		},
+	],
+	[
+		{ baz: null },
+		{
+			text: "doc->>'baz' = $1",
+			values: [null],
+		},
+	],
+	[
+		{ $or: [{ foo: 123 }, { baz: null }] },
+		{
+			text: "(doc->>'foo' = $1 OR doc->>'baz' = $2)",
+			values: [123, null],
+		},
+	],
+	[
+		{ $and: [{ baz: null }, { $or: [{ bar: "asd" }, { bar: "dsa" }] }] },
+		{
+			text: "(doc->>'baz' = $1 AND (doc->>'bar' = $2 OR doc->>'bar' = $3))",
+			values: [null, "asd", "dsa"],
 		},
 	],
 ]

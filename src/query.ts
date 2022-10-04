@@ -74,20 +74,21 @@ type LteOp<Q> = { $lte: Q }
 export type Query<T> = QueryableProps<T> | BooleanOps<T> | {}
 
 function reduce(clauses: SqlClause[], op: LogicalOp): SqlClause {
-	return clauses.reduce(
+	const clause = clauses.reduce(
 		(acc, clause) => ({
 			text:
 				acc.text.length > 0
-					? `${acc.text} ${op} (${clause.text})`
+					? `${acc.text} ${op} ${clause.text}`
 					: clause.text,
 			values: acc.values.concat(clause.values),
 		}),
 		{ text: "", values: [] }
 	)
-}
 
-function conj(clauses: SqlClause[]): SqlClause {
-	return reduce(clauses, "AND")
+	return {
+		text: `(${clause.text})`,
+		values: clause.values,
+	}
 }
 
 abstract class Match {
@@ -113,10 +114,69 @@ class ExactMatch extends Match {
 	}
 }
 
+class MultiMatch extends Match {
+	constructor(
+		public readonly matches: Match[],
+		public readonly operator: LogicalOp
+	) {
+		super()
+	}
+
+	public toSQL(ix: number, targetColumn: string): [SqlClause, number] {
+		const clauses: SqlClause[] = []
+		let x = ix
+
+		this.matches.forEach((match) => {
+			const [clause, nextIx] = match.toSQL(x, targetColumn)
+			x = nextIx
+			clauses.push(clause)
+		})
+
+		return [reduce(clauses, this.operator), x]
+	}
+}
+
+class NoopMatch extends Match {
+	constructor() {
+		super()
+	}
+
+	public toSQL(ix: number, _: string): [SqlClause, number] {
+		return [
+			{
+				text: "true",
+				values: [],
+			},
+			ix,
+		]
+	}
+}
+
 function match(key: string, value: any): Match {
 	switch (key) {
 		case "$or":
 		case "$and":
+			if (!Array.isArray(value)) {
+				throw new Error(`array expected: ${value}`)
+			}
+
+			const subQuery = value.map((subq) => {
+				const entries = Object.entries(subq) as [string, any][]
+
+				if (entries.length === 0) {
+					return new NoopMatch()
+				} else if (entries.length === 1) {
+					const [eKey, eValue] = entries[0] as [string, any]
+					return match(eKey, eValue)
+				} else {
+					return new MultiMatch(
+						entries.map(([eKey, eValue]) => match(eKey, eValue)),
+						"AND"
+					)
+				}
+			})
+
+			return new MultiMatch(subQuery, key === "$or" ? "OR" : "AND")
 		case "$in":
 		case "$nin":
 		case "$eq":
@@ -133,6 +193,10 @@ function match(key: string, value: any): Match {
 				case "boolean":
 					return new ExactMatch(key, value)
 				default:
+					if (value === null) {
+						return new ExactMatch(key, value)
+					}
+
 					throw new Error(
 						`unsupported match: ${key} -> ${JSON.stringify(value)}`
 					)
@@ -154,9 +218,11 @@ export function whereClause<T>(
 		clauses.push(clause)
 	}
 
-	if (clauses.length > 0) {
-		return conj(clauses)
+	if (clauses.length > 1) {
+		return reduce(clauses, "AND")
+	} else if (clauses.length === 1) {
+		return clauses[0] as SqlClause
+	} else {
+		return { text: "true", values: [] }
 	}
-
-	return { text: "true", values: [] }
 }
