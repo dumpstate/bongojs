@@ -4,6 +4,7 @@ export interface SqlClause {
 }
 
 type LogicalOp = "AND" | "OR"
+type ArrayMatchOperator = "IN" | "NOT IN"
 type ValueMatchOperator = "=" | "<>" | "<" | "<=" | ">" | ">="
 
 type AtLeastOne<T> = [T, ...T[]]
@@ -105,76 +106,6 @@ class ValueMatch extends Match {
 		super()
 	}
 
-	private static plainValue(
-		value: any
-	): [string | number | boolean | null, boolean] {
-		switch (typeof value) {
-			case "string":
-			case "number":
-			case "boolean":
-				return [value, true]
-			default:
-				if (value === null) {
-					return [value, true]
-				}
-
-				return [value, false]
-		}
-	}
-
-	private static fromMatchObject(key: string, value: any): ValueMatch {
-		if (
-			typeof value !== "object" ||
-			value === null ||
-			value === undefined
-		) {
-			throw new Error(
-				`not a valid match object: ${JSON.stringify(value)}`
-			)
-		}
-
-		const entries = Object.entries(value)
-		if (entries.length !== 1) {
-			throw new Error("invalid match object")
-		}
-
-		const [eKey, eValue] = entries[0] as [string, any]
-		const [plainEntryValue, isPlainValue] = ValueMatch.plainValue(eValue)
-		if (!isPlainValue) {
-			if (Array.isArray(value)) {
-				// TODO handle $in and $nin
-			}
-
-			throw new Error("either plain value or array expected")
-		}
-
-		switch (eKey) {
-			case "$eq":
-				return new ValueMatch("=", key, plainEntryValue)
-			case "$ne":
-				return new ValueMatch("<>", key, plainEntryValue)
-			case "$gt":
-				return new ValueMatch(">", key, plainEntryValue)
-			case "$gte":
-				return new ValueMatch(">=", key, plainEntryValue)
-			case "$lt":
-				return new ValueMatch("<", key, plainEntryValue)
-			case "$lte":
-				return new ValueMatch("<=", key, plainEntryValue)
-			default:
-				throw new Error(`unsuported operator: ${eKey}`)
-		}
-	}
-
-	public static of(key: string, value: any): ValueMatch {
-		const [valueToMatch, isPlain] = ValueMatch.plainValue(value)
-		if (isPlain) {
-			return new ValueMatch("=", key, valueToMatch)
-		}
-
-		return ValueMatch.fromMatchObject(key, value)
-	}
-
 	public toSQL(ix: number, targetColumn: string) {
 		return [
 			{
@@ -183,6 +114,39 @@ class ValueMatch extends Match {
 			},
 			ix + 1,
 		] as [SqlClause, number]
+	}
+}
+
+class ArrayMatch extends Match {
+	constructor(
+		public readonly operator: ArrayMatchOperator,
+		public readonly key: string,
+		public readonly values: (string | number | boolean | null)[]
+	) {
+		super()
+	}
+
+	public toSQL(ix: number, targetColumn: string) {
+		if (this.values.length < 1) {
+			return [{ text: "true", values: [] }, ix] as [SqlClause, number]
+		}
+
+		return [
+			{
+				text: `${targetColumn}->>'${this.key}' ${
+					this.operator
+				} (${this.range(ix)})`,
+				values: this.values,
+			},
+			ix + this.values.length,
+		] as [SqlClause, number]
+	}
+
+	private range(start: number) {
+		return new Array(this.values.length)
+			.fill(start)
+			.map((offset, ix) => `$${offset + ix}`)
+			.join(", ")
 	}
 }
 
@@ -224,6 +188,75 @@ class NoopMatch extends Match {
 	}
 }
 
+function plainValue(value: any): [string | number | boolean | null, boolean] {
+	switch (typeof value) {
+		case "string":
+		case "number":
+		case "boolean":
+			return [value, true]
+		default:
+			if (value === null) {
+				return [value, true]
+			}
+
+			return [value, false]
+	}
+}
+
+function matchObject(key: string, value: any): Match {
+	if (typeof value !== "object" || value === null || value === undefined) {
+		throw new Error(`not a valid match object: ${JSON.stringify(value)}`)
+	}
+
+	const entries = Object.entries(value)
+	if (entries.length !== 1) {
+		throw new Error("invalid match object")
+	}
+
+	const [eKey, eValue] = entries[0] as [string, any]
+	const [plainEntryValue, isPlainValue] = plainValue(eValue)
+	if (!isPlainValue) {
+		if (Array.isArray(eValue)) {
+			switch (eKey) {
+				case "$in":
+					return new ArrayMatch("IN", key, eValue)
+				case "$nin":
+					return new ArrayMatch("NOT IN", key, eValue)
+				default:
+					throw new Error(`unsupported operator ${eKey}`)
+			}
+		}
+
+		throw new Error("either plain value or array expected")
+	}
+
+	switch (eKey) {
+		case "$eq":
+			return new ValueMatch("=", key, plainEntryValue)
+		case "$ne":
+			return new ValueMatch("<>", key, plainEntryValue)
+		case "$gt":
+			return new ValueMatch(">", key, plainEntryValue)
+		case "$gte":
+			return new ValueMatch(">=", key, plainEntryValue)
+		case "$lt":
+			return new ValueMatch("<", key, plainEntryValue)
+		case "$lte":
+			return new ValueMatch("<=", key, plainEntryValue)
+		default:
+			throw new Error(`unsuported operator: ${eKey}`)
+	}
+}
+
+function valueMatch(key: string, value: any): Match {
+	const [valueToMatch, isPlain] = plainValue(value)
+	if (isPlain) {
+		return new ValueMatch("=", key, valueToMatch)
+	}
+
+	return matchObject(key, value)
+}
+
 function match(key: string, value: any): Match {
 	switch (key) {
 		case "$or":
@@ -250,7 +283,7 @@ function match(key: string, value: any): Match {
 
 			return new MultiMatch(subQuery, key === "$or" ? "OR" : "AND")
 		default:
-			return ValueMatch.of(key, value)
+			return valueMatch(key, value)
 	}
 }
 

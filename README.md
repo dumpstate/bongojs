@@ -1,5 +1,7 @@
 # BongoJS
 
+[WIP]
+
 [PostgreSQL](https://www.postgresql.org/) JSON document modeling tool for [node.js](https://nodejs.org).
 
 ## Why?
