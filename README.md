@@ -25,3 +25,7 @@ To execute the tests, you need PostgreSQL running with user `bongo` and database
     createdb -O bongo bongo_db
 
 You can also use provided `docker-compose.yml`: `docker-compose up`.
+
+## Usage
+
+TODO
