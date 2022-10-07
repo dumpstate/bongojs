@@ -8,7 +8,7 @@ import {
 import { collection } from "./collection"
 import { Logger, newLogger } from "./logger"
 import { DocType } from "./model"
-import { migrateUp } from "./schema"
+import { migrateDown, migrateUp } from "./schema"
 
 function isPGPool(obj: any): obj is PGPool {
 	return obj && obj.hasOwnProperty("connect")
@@ -77,7 +77,11 @@ export class Bongo {
 			this.logger.warn("No doctypes registered when migrating")
 		}
 
-		await migrateUp(this.pg)
+		await migrateUp(this.pg, Array.from(this.registry.values()))
+	}
+
+	public async drop() {
+		await migrateDown(this.pg)
 	}
 
 	public async close() {

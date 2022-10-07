@@ -1,9 +1,9 @@
 import Ajv from "ajv/dist/jtd"
 import { Pool as PGPool, PoolClient as PGPoolClient } from "pg"
 
-import { DEFAULT_LIMIT, DOCUMENT_TABLE } from "./constants"
+import { DEFAULT_LIMIT } from "./constants"
 import { nextId } from "./ids"
-import { DocType } from "./model"
+import { DocType, partitionName } from "./model"
 import { Query, whereClause } from "./query"
 import { flatten, omit } from "./utils"
 
@@ -39,6 +39,7 @@ export function collection<S, T>(
 		...doctype.schema,
 		additionalProperties: false,
 	})
+	const partition = partitionName(doctype)
 
 	function instance(id: string, obj: T) {
 		if (!validate(obj)) {
@@ -79,7 +80,7 @@ export function collection<S, T>(
 			const res = await conn.query(
 				`
                     SELECT id, doc
-                    FROM ${DOCUMENT_TABLE}
+                    FROM ${partition}
                     WHERE doctype = $${values.length + 1} AND ${text}
                     LIMIT $${values.length + 2}
                     OFFSET $${values.length + 3}
@@ -112,7 +113,7 @@ export function collection<S, T>(
 			const res = await conn.query(
 				`
                     SELECT id, doc
-                    FROM ${DOCUMENT_TABLE}
+                    FROM ${partition}
                     WHERE
                         id = $1 AND
                         doctype = $2
@@ -188,7 +189,7 @@ export function collection<S, T>(
 		return exec(async (conn) => {
 			const res = await conn.query(
 				`
-                    DELETE FROM ${DOCUMENT_TABLE}
+                    DELETE FROM ${partition}
                     WHERE id = $1 AND
                           doctype = $2
                 `,
@@ -203,7 +204,7 @@ export function collection<S, T>(
 		return exec(async (conn) => {
 			const res = await conn.query(
 				`
-                    DELETE FROM ${DOCUMENT_TABLE}
+                    DELETE FROM ${partition}
                     WHERE doctype = $1
                 `,
 				[doctype.name]
@@ -223,7 +224,7 @@ export function collection<S, T>(
 		return exec(async (conn) => {
 			const res = await conn.query(
 				`
-                    INSERT INTO ${DOCUMENT_TABLE} (id, doctype, doc)
+                    INSERT INTO ${partition} (id, doctype, doc)
                     VALUES ($1, $2, $3)
                     ON CONFLICT (id, doctype)
                     DO

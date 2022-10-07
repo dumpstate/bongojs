@@ -14,7 +14,7 @@
 		"prepublish": "npm run build",
 		"style:check": "prettier --check .",
 		"style:fix": "prettier --write .",
-		"test": "npm run build:test && PGUSER=bongo PGHOST=localhost PGDATABASE=bongo_db tap libtest/test/*.js libtest/test/**/*.js"
+		"test": "npm run build:test && PGUSER=bongo PGHOST=localhost PGDATABASE=bongo_db tap libtest/test/*.test.js libtest/test/**/*.test.js"
 	},
 	"author": "Albert Sadowski <asadowski@mailbox.org>",
 	"license": "MIT",

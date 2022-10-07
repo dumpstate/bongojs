@@ -16,11 +16,16 @@ test("collection.find", async (t) => {
 		} as const,
 	})
 
+	t.before(async () => {
+		await bongo.migrate()
+	})
+
 	t.afterEach(async () => {
 		await foo.drop()
 	})
 
 	t.teardown(async () => {
+		await bongo.drop()
 		await bongo.close()
 	})
 

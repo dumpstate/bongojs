@@ -1,29 +1,50 @@
 #!/usr/bin/env node
 
+import { join } from "path"
+
 import { Argument, Command } from "commander"
 
 import { Bongo } from "./Bongo"
 
 const program = new Command()
 
+function loadBongo(path?: string): Bongo {
+	if (path) {
+		try {
+			const { bongo } = require(join("../", path))
+
+			return bongo
+		} catch (err) {
+			throw new Error(`bongo not found at: ${path}`)
+		}
+	}
+
+	return new Bongo()
+}
+
 program
 	.command("migrate")
 	.addArgument(new Argument("<direction>").choices(["up", "down"]))
+	.addArgument(new Argument("<path>").argOptional())
 	.description("applies database migrations")
-	.action(async (direction: string) => {
-		const bongo = new Bongo()
-
-		// TODO add a way to create indexes + run user migrations
+	.action(async (direction: string, path?: string) => {
+		const bongo = loadBongo(path)
 
 		switch (direction) {
 			case "up":
 				console.log("Migrating UP")
 
-				await bongo.migrate()
+				try {
+					await bongo.migrate()
 
-				console.log("Done. Closing DB connection.")
-				await bongo.close()
-				break
+					console.log("Done. Closing DB connection.")
+					await bongo.close()
+				} catch (err) {
+					console.error(err)
+					process.exit(1)
+				}
+
+				process.exit(0)
 			case "down":
 				throw Error("Not implemented")
 			default:

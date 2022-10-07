@@ -1,32 +1,35 @@
 import { test } from "tap"
-
 import { Bongo } from "../src/Bongo"
 
 test("Bongo", async (t) => {
-	let bongo: Bongo
-
-	t.beforeEach(() => {
-		bongo = new Bongo()
+	const bongo = new Bongo()
+	const foo = bongo.collection({
+		name: "foo",
+		prefix: "foo",
+		schema: {
+			properties: {
+				foo: { type: "int32" },
+			},
+			optionalProperties: {
+				bar: { type: "string" },
+			},
+		} as const,
 	})
 
-	t.afterEach(async () => {
+	t.before(async () => {
+		await bongo.migrate()
+	})
+
+	t.teardown(async () => {
+		await bongo.drop()
 		await bongo.close()
 	})
 
-	await t.test("foo", async (t) => {
-		const foo = bongo.collection({
-			name: "doc:foo",
-			prefix: "foo",
-			schema: {
-				properties: {
-					foo: { type: "int32" },
-				},
-				optionalProperties: {
-					bar: { type: "string" },
-				},
-			} as const,
-		})
+	t.afterEach(async () => {
+		await foo.drop()
+	})
 
+	await t.test("foo", async (t) => {
 		const newFoo = await foo.create({
 			foo: 42,
 			bar: "ouch",
