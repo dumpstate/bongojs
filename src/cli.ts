@@ -46,7 +46,15 @@ program
 
 				process.exit(0)
 			case "down":
-				throw Error("Not implemented")
+				try {
+					await bongo.drop()
+					await bongo.close()
+				} catch (err) {
+					console.error(err)
+					process.exit(1)
+				}
+
+				process.exit(0)
 			default:
 				throw Error(`Unknown direction: ${direction}`)
 		}
