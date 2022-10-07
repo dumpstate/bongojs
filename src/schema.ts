@@ -31,6 +31,15 @@ const REVISIONS: Revision[] = [
         `,
 		down: `DROP TABLE ${DOCUMENT_TABLE}`,
 	},
+	{
+		id: 3,
+		up: `
+			CREATE INDEX IF NOT EXISTS ix_${DOCUMENT_TABLE}_doc
+				ON ${DOCUMENT_TABLE}
+				USING GIN (doc)
+		`,
+		down: `DROP INDEX IF EXISTS ix_${DOCUMENT_TABLE}_doc`,
+	},
 ]
 
 async function checkTableExists(
