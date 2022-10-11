@@ -5,7 +5,7 @@ export interface SqlClause {
 
 type LogicalOp = "AND" | "OR"
 type ArrayMatchOperator = "IN" | "NOT IN"
-type ValueMatchOperator = "=" | "<>" | "<" | "<=" | ">" | ">="
+type ValueMatchOperator = "==" | "!=" | "<" | "<=" | ">" | ">="
 
 type AtLeastOne<T> = [T, ...T[]]
 type AtLeastTwo<T> = [T, T, ...T[]]
@@ -75,6 +75,28 @@ type LteOp<Q> = { $lte: Q }
 
 export type Query<T> = QueryableProps<T> | BooleanOps<T> | {}
 
+function ipltJSONPath(value: string | number | boolean | null): string {
+	if (value === null) {
+		return "null"
+	}
+
+	if (typeof value === "boolean") {
+		return value ? "true" : "false"
+	}
+
+	if (typeof value === "number") {
+		// TODO check postgres number limits + float precision
+		return `${value}`
+	}
+
+	if (typeof value === "string") {
+		// TODO escape problematic characters
+		return `"${value}"`
+	}
+
+	throw new Error(`unsupported value: ${typeof value}: ${value}`)
+}
+
 function reduce(clauses: SqlClause[], op: LogicalOp): SqlClause {
 	const clause = clauses.reduce(
 		(acc, clause) => ({
@@ -109,8 +131,10 @@ class ValueMatch extends Match {
 	public toSQL(ix: number, targetColumn: string) {
 		return [
 			{
-				text: `${targetColumn}->>'${this.key}' ${this.operator} $${ix}`,
-				values: [this.value],
+				text: `${targetColumn} @@ '$.${this.key} ${
+					this.operator
+				} ${ipltJSONPath(this.value)}'`,
+				values: [],
 			},
 			ix + 1,
 		] as [SqlClause, number]
@@ -232,9 +256,9 @@ function matchObject(key: string, value: any): Match {
 
 	switch (eKey) {
 		case "$eq":
-			return new ValueMatch("=", key, plainEntryValue)
+			return new ValueMatch("==", key, plainEntryValue)
 		case "$ne":
-			return new ValueMatch("<>", key, plainEntryValue)
+			return new ValueMatch("!=", key, plainEntryValue)
 		case "$gt":
 			return new ValueMatch(">", key, plainEntryValue)
 		case "$gte":
@@ -251,7 +275,7 @@ function matchObject(key: string, value: any): Match {
 function valueMatch(key: string, value: any): Match {
 	const [valueToMatch, isPlain] = plainValue(value)
 	if (isPlain) {
-		return new ValueMatch("=", key, valueToMatch)
+		return new ValueMatch("==", key, valueToMatch)
 	}
 
 	return matchObject(key, value)

@@ -26,8 +26,8 @@ const testCases: [Query<Entity>, SqlClause][] = [
 	[
 		{ foo: 123 },
 		{
-			text: "doc->>'foo' = $1",
-			values: [123],
+			text: "doc @@ '$.foo == 123'",
+			values: [],
 		},
 	],
 	[
@@ -36,8 +36,8 @@ const testCases: [Query<Entity>, SqlClause][] = [
 			bar: "baz",
 		},
 		{
-			text: "(doc->>'foo' = $1 AND doc->>'bar' = $2)",
-			values: [123, "baz"],
+			text: "(doc @@ '$.foo == 123' AND doc @@ '$.bar == \"baz\"')",
+			values: [],
 		},
 	],
 	[
@@ -47,57 +47,57 @@ const testCases: [Query<Entity>, SqlClause][] = [
 			baz: true,
 		},
 		{
-			text: "(doc->>'foo' = $1 AND doc->>'bar' = $2 AND doc->>'baz' = $3)",
-			values: [123, "baz", true],
+			text: "(doc @@ '$.foo == 123' AND doc @@ '$.bar == \"baz\"' AND doc @@ '$.baz == true')",
+			values: [],
 		},
 	],
 	[
 		{ baz: null },
 		{
-			text: "doc->>'baz' = $1",
-			values: [null],
+			text: "doc @@ '$.baz == null'",
+			values: [],
 		},
 	],
 	[
 		{ $or: [{ foo: 123 }, { baz: null }] },
 		{
-			text: "(doc->>'foo' = $1 OR doc->>'baz' = $2)",
-			values: [123, null],
+			text: "(doc @@ '$.foo == 123' OR doc @@ '$.baz == null')",
+			values: [],
 		},
 	],
 	[
 		{ $and: [{ baz: null }, { $or: [{ bar: "asd" }, { bar: "dsa" }] }] },
 		{
-			text: "(doc->>'baz' = $1 AND (doc->>'bar' = $2 OR doc->>'bar' = $3))",
-			values: [null, "asd", "dsa"],
+			text: "(doc @@ '$.baz == null' AND (doc @@ '$.bar == \"asd\"' OR doc @@ '$.bar == \"dsa\"'))",
+			values: [],
 		},
 	],
 	[
 		{ foo: { $gt: 4 } },
 		{
-			text: "doc->>'foo' > $1",
-			values: [4],
+			text: "doc @@ '$.foo > 4'",
+			values: [],
 		},
 	],
 	[
 		{ foo: { $gte: 2 }, bar: { $eq: "asd" } },
 		{
-			text: "(doc->>'foo' >= $1 AND doc->>'bar' = $2)",
-			values: [2, "asd"],
+			text: "(doc @@ '$.foo >= 2' AND doc @@ '$.bar == \"asd\"')",
+			values: [],
 		},
 	],
 	[
 		{ foo: { $lt: 2 }, baz: { $ne: null } },
 		{
-			text: "(doc->>'foo' < $1 AND doc->>'baz' <> $2)",
-			values: [2, null],
+			text: "(doc @@ '$.foo < 2' AND doc @@ '$.baz != null')",
+			values: [],
 		},
 	],
 	[
 		{ foo: { $lte: 2 } },
 		{
-			text: "doc->>'foo' <= $1",
-			values: [2],
+			text: "doc @@ '$.foo <= 2'",
+			values: [],
 		},
 	],
 	[
