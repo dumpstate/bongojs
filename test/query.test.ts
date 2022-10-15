@@ -103,15 +103,15 @@ const testCases: [Query<Entity>, SqlClause][] = [
 	[
 		{ foo: { $in: [2, 3] } },
 		{
-			text: "doc->>'foo' IN ($1, $2)",
-			values: [2, 3],
+			text: "doc @? '$.foo ? (@ == 2 || @ == 3)'",
+			values: [],
 		},
 	],
 	[
 		{ bar: { $nin: ["asd", "dsa"] } },
 		{
-			text: "doc->>'bar' NOT IN ($1, $2)",
-			values: ["asd", "dsa"],
+			text: 'doc @? \'$.bar ? (@ != "asd" && @ != "dsa")\'',
+			values: [],
 		},
 	],
 ]

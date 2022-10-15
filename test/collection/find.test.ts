@@ -148,4 +148,20 @@ test("collection.find", async (t) => {
 
 		t.match(actual, [{ foo: 3, bar: 4 }])
 	})
+
+	await t.test("find with $in matcher", async (t) => {
+		await foo.createAll([
+			{ foo: 1 },
+			{ foo: 2 },
+			{ foo: 2, bar: 4 },
+			{ foo: 3 },
+			{ foo: 4 },
+		])
+
+		const actual = await foo.find({
+			foo: { $in: [2, 3] },
+		})
+
+		t.match(actual, [{ foo: 2 }, { foo: 2, bar: 4 }, { foo: 3 }])
+	})
 })

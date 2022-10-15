@@ -4,7 +4,7 @@ export interface SqlClause {
 }
 
 type LogicalOp = "AND" | "OR"
-type ArrayMatchOperator = "IN" | "NOT IN"
+type ArrayMatchOperator = ["==", "||"] | ["!=", "&&"]
 type ValueMatchOperator = "==" | "!=" | "<" | "<=" | ">" | ">="
 
 type AtLeastOne<T> = [T, ...T[]]
@@ -155,22 +155,17 @@ class ArrayMatch extends Match {
 			return [{ text: "true", values: [] }, ix] as [SqlClause, number]
 		}
 
+		const [innerOp, logOp] = this.operator
+
 		return [
 			{
-				text: `${targetColumn}->>'${this.key}' ${
-					this.operator
-				} (${this.range(ix)})`,
-				values: this.values,
+				text: `${targetColumn} @? '$.${this.key} ? (${this.values
+					.map((v) => `@ ${innerOp} ${ipltJSONPath(v)}`)
+					.join(` ${logOp} `)})'`,
+				values: [],
 			},
 			ix + this.values.length,
 		] as [SqlClause, number]
-	}
-
-	private range(start: number) {
-		return new Array(this.values.length)
-			.fill(start)
-			.map((offset, ix) => `$${offset + ix}`)
-			.join(", ")
 	}
 }
 
@@ -243,9 +238,9 @@ function matchObject(key: string, value: any): Match {
 		if (Array.isArray(eValue)) {
 			switch (eKey) {
 				case "$in":
-					return new ArrayMatch("IN", key, eValue)
+					return new ArrayMatch(["==", "||"], key, eValue)
 				case "$nin":
-					return new ArrayMatch("NOT IN", key, eValue)
+					return new ArrayMatch(["!=", "&&"], key, eValue)
 				default:
 					throw new Error(`unsupported operator ${eKey}`)
 			}
