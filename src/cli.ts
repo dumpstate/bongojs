@@ -11,7 +11,7 @@ const program = new Command()
 function loadBongo(path?: string): Bongo {
 	if (path) {
 		try {
-			const { bongo } = require(join("../", path))
+			const { bongo } = require(join(process.cwd(), path))
 
 			return bongo
 		} catch (err) {
