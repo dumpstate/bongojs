@@ -1,3 +1,4 @@
+import { Pool } from "pg"
 import { test } from "tap"
 import { Bongo } from "../src/Bongo"
 
@@ -43,5 +44,16 @@ test("Bongo", async (t) => {
 		await foo.save(newFoo)
 
 		t.ok(newFoo.foo === 22)
+	})
+})
+
+test("create bongo for an existing Pool", async (t) => {
+	const bongo = new Bongo(new Pool())
+
+	await t.test("pool is usable", async (t) => {
+		const conn = await bongo.pg.connect()
+		const res = await conn.query("select 1")
+		conn.release()
+		t.ok(res)
 	})
 })

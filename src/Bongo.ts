@@ -11,7 +11,7 @@ import { DocType } from "./model"
 import { migrateDown, migrateUp } from "./schema"
 
 function isPGPool(obj: any): obj is PGPool {
-	return obj && obj.hasOwnProperty("connect")
+	return obj && obj instanceof PGPool
 }
 
 export class Bongo {
