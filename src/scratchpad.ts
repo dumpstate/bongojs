@@ -17,27 +17,31 @@ async function main() {
 
 	await bongo.migrate()
 
-	const instance = await foo.create({
-		foo: 42,
-		bar: "yeah",
-	})
+	const instance = await foo
+		.create({
+			foo: 42,
+			bar: "yeah",
+		})
+		.run()
 
 	instance.foo = 22
 
-	await foo.save(instance)
+	await foo.save(instance).run()
 
-	const another = await foo.findById(instance.id)
+	const another = await foo.findById(instance.id).run()
 
 	console.log(`Another instance: ${JSON.stringify(another)}`)
 
-	const queried = await foo.find(
-		{
-			// foo: {ooo: 22},
-			foo: 22,
-			// bar: 'yeah',
-		},
-		2
-	)
+	const queried = await foo
+		.find(
+			{
+				// foo: {ooo: 22},
+				foo: 22,
+				// bar: 'yeah',
+			},
+			2
+		)
+		.run()
 
 	console.log(`All(foo = 22): ${JSON.stringify(queried)}`)
 

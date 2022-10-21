@@ -27,21 +27,23 @@ test("Bongo", async (t) => {
 	})
 
 	t.afterEach(async () => {
-		await foo.drop()
+		await foo.drop().run()
 	})
 
 	await t.test("foo", async (t) => {
-		const newFoo = await foo.create({
-			foo: 42,
-			bar: "ouch",
-		})
+		const newFoo = await foo
+			.create({
+				foo: 42,
+				bar: "ouch",
+			})
+			.run()
 
 		t.ok(bongo)
 		t.ok(newFoo.id)
 
 		newFoo.foo = 22
 
-		await foo.save(newFoo)
+		await foo.save(newFoo).run()
 
 		t.ok(newFoo.foo === 22)
 	})
@@ -49,6 +51,10 @@ test("Bongo", async (t) => {
 
 test("create bongo for an existing Pool", async (t) => {
 	const bongo = new Bongo(new Pool())
+
+	t.teardown(async () => {
+		await bongo.close()
+	})
 
 	await t.test("pool is usable", async (t) => {
 		const conn = await bongo.pg.connect()
