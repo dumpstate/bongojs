@@ -9,6 +9,7 @@ import { collection } from "./collection"
 import { Logger, newLogger } from "./logger"
 import { DocType } from "./model"
 import { migrateDown, migrateUp } from "./schema"
+import { Transactor } from "./Transactor"
 
 function isPGPool(obj: any): obj is PGPool {
 	return obj && obj instanceof PGPool
@@ -16,6 +17,7 @@ function isPGPool(obj: any): obj is PGPool {
 
 export class Bongo {
 	public pg: PGPool
+	public tx: Transactor
 	private logger: Logger
 
 	private registry: Map<string, DocType<any>> = new Map()
@@ -43,6 +45,8 @@ export class Bongo {
 				})
 			})
 		}
+
+		this.tx = new Transactor(this.pg)
 	}
 
 	public collection<S>(doctype: DocType<S>) {
@@ -69,7 +73,7 @@ export class Bongo {
 		const { schema } = doctype
 		type DataType = JTDDataType<typeof schema>
 
-		return collection<S, DataType>(this.pg, doctype)
+		return collection<S, DataType>(doctype)
 	}
 
 	public async migrate() {

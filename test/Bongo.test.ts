@@ -27,7 +27,7 @@ test("Bongo", async (t) => {
 	})
 
 	t.afterEach(async () => {
-		await foo.drop().run()
+		await foo.drop().run(bongo.tx)
 	})
 
 	await t.test("foo", async (t) => {
@@ -36,14 +36,14 @@ test("Bongo", async (t) => {
 				foo: 42,
 				bar: "ouch",
 			})
-			.run()
+			.run(bongo.tx)
 
 		t.ok(bongo)
 		t.ok(newFoo.id)
 
 		newFoo.foo = 22
 
-		await foo.save(newFoo).run()
+		await foo.save(newFoo).run(bongo.tx)
 
 		t.ok(newFoo.foo === 22)
 	})

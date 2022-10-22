@@ -22,13 +22,13 @@ async function main() {
 			foo: 42,
 			bar: "yeah",
 		})
-		.run()
+		.run(bongo.tx)
 
 	instance.foo = 22
 
-	await foo.save(instance).run()
+	await foo.save(instance).run(bongo.tx)
 
-	const another = await foo.findById(instance.id).run()
+	const another = await foo.findById(instance.id).run(bongo.tx)
 
 	console.log(`Another instance: ${JSON.stringify(another)}`)
 
@@ -41,7 +41,7 @@ async function main() {
 			},
 			2
 		)
-		.run()
+		.run(bongo.tx)
 
 	console.log(`All(foo = 22): ${JSON.stringify(queried)}`)
 

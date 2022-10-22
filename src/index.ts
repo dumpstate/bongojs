@@ -1,4 +1,5 @@
 export * from "./Bongo"
 export * from "./model"
 export { Collection } from "./collection"
+export { DBAction, pure } from "./DBAction"
 export { Query } from "./query"

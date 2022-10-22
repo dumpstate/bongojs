@@ -1,12 +1,12 @@
 import Ajv from "ajv/dist/jtd"
-import { Pool as PGPool, PoolClient as PGPoolClient } from "pg"
+import { PoolClient as PGPoolClient } from "pg"
 
 import { DEFAULT_LIMIT } from "./constants"
-import { DBAction } from "./DBAction"
+import { DBAction, flatten } from "./DBAction"
 import { nextId } from "./ids"
 import { DocType, partitionName } from "./model"
 import { Query, whereClause } from "./query"
-import { flatten, omit } from "./utils"
+import { omit } from "./utils"
 
 export interface DocumentMeta {
 	readonly id: string
@@ -27,10 +27,7 @@ export interface Collection<T> {
 	save: (obj: T & DocumentMeta) => DBAction<T & DocumentMeta>
 }
 
-export function collection<S, T>(
-	pg: PGPool,
-	doctype: DocType<S>
-): Collection<T> {
+export function collection<S, T>(doctype: DocType<S>): Collection<T> {
 	const ajv = new Ajv()
 	const validate = ajv.compile<T>({
 		...doctype.schema,
@@ -56,7 +53,7 @@ export function collection<S, T>(
 	): DBAction<(T & DocumentMeta)[]> {
 		const { text, values } = whereClause<T>(query)
 
-		return new DBAction(pg, async (conn: PGPoolClient) => {
+		return new DBAction(async (conn: PGPoolClient) => {
 			const res = await conn.query(
 				`
 					SELECT id, doc
@@ -87,7 +84,7 @@ export function collection<S, T>(
 	}
 
 	function findById(id: string) {
-		return new DBAction(pg, async (conn: PGPoolClient) => {
+		return new DBAction(async (conn: PGPoolClient) => {
 			const res = await conn.query(
 				`
 					SELECT id, doc
@@ -122,17 +119,11 @@ export function collection<S, T>(
 	}
 
 	function createAll(objs: T[]): DBAction<(T & DocumentMeta)[]> {
-		return new DBAction(pg, async (conn: PGPoolClient) =>
-			flatten(
-				objs.map((obj) =>
-					save(instance(nextId(doctype), obj)).run(conn)
-				)
-			)
-		)
+		return flatten(objs.map((obj) => save(instance(nextId(doctype), obj))))
 	}
 
 	function deleteById(id: string): DBAction<boolean> {
-		return new DBAction(pg, async (conn: PGPoolClient) => {
+		return new DBAction(async (conn: PGPoolClient) => {
 			const res = await conn.query(
 				`
 					DELETE FROM ${partition}
@@ -147,7 +138,7 @@ export function collection<S, T>(
 	}
 
 	function drop(): DBAction<number> {
-		return new DBAction(pg, async (conn: PGPoolClient) => {
+		return new DBAction(async (conn: PGPoolClient) => {
 			const res = await conn.query(`DELETE FROM ${partition}`, [])
 
 			return res.rowCount
@@ -161,7 +152,7 @@ export function collection<S, T>(
 			throw new Error("ValidationError")
 		}
 
-		return new DBAction(pg, async (conn: PGPoolClient) => {
+		return new DBAction(async (conn: PGPoolClient) => {
 			const res = await conn.query(
 				`
 					INSERT INTO ${partition} (id, doctype, doc)
