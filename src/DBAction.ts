@@ -21,7 +21,7 @@ export class DBAction<T> {
 
 	public async run(tr: Transactor): Promise<T> {
 		for await (const conn of tr.connection()) {
-			return this.action(conn)
+			return await this.action(conn)
 		}
 
 		throw new Error("failed to acquire connection from transactor")
@@ -29,7 +29,7 @@ export class DBAction<T> {
 
 	public async transact(tr: Transactor): Promise<T> {
 		for await (const conn of tr.transaction()) {
-			return this.action(conn)
+			return await this.action(conn)
 		}
 
 		throw new Error("failed to acquire connection from transactor")
