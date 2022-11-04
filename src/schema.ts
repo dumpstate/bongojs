@@ -143,9 +143,9 @@ export async function migrateUp(
 			}
 		}
 
-		doctypes.forEach(async (doctype) => {
+		for (const doctype of doctypes) {
 			await ensurePartition(logger, conn, doctype)
-		})
+		}
 	} finally {
 		conn.release()
 	}
