@@ -16,19 +16,4 @@ export class Transactor {
 			conn.release()
 		}
 	}
-
-	public async *transaction(): AsyncGenerator<PoolClient> {
-		const conn = await this.pg.connect()
-
-		try {
-			await conn.query("BEGIN")
-			yield conn
-			await conn.query("COMMIT")
-		} catch (err) {
-			await conn.query("ROLLBACK")
-			throw err
-		} finally {
-			conn.release()
-		}
-	}
 }

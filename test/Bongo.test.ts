@@ -47,6 +47,64 @@ test("Bongo", async (t) => {
 
 		t.ok(newFoo.foo === 22)
 	})
+
+	await t.test("foo with transact", async (t) => {
+		await foo
+			.create({
+				foo: 44,
+				bar: "foo",
+			})
+			.flatMap((_) =>
+				foo.create({
+					foo: 45,
+					bar: "baz",
+				})
+			)
+			.transact(bongo.tx)
+
+		t.ok((await foo.find({}).run(bongo.tx)).length === 2)
+		t.ok(await foo.findOne({ foo: 44 }).run(bongo.tx))
+		t.ok(await foo.findOne({ foo: 45 }).run(bongo.tx))
+	})
+
+	await t.test("foo on rollback", async (t) => {
+		try {
+			await foo
+				.create({
+					foo: 44,
+					bar: "foo",
+				})
+				.flatMap((_) =>
+					foo.create({
+						foo: "a string",
+						bar: 42,
+					} as any)
+				)
+				.transact(bongo.tx)
+		} catch (_) {}
+
+		t.ok((await foo.find({}).run(bongo.tx)).length == 0)
+	})
+
+	await t.test("foo with run and failure", async (t) => {
+		try {
+			await foo
+				.create({
+					foo: 44,
+					bar: "foo",
+				})
+				.flatMap((_) =>
+					foo.create({
+						foo: "a string",
+						bar: 42,
+					} as any)
+				)
+				.run(bongo.tx)
+		} catch (_) {}
+
+		t.ok((await foo.find({}).run(bongo.tx)).length == 1)
+		t.ok(await foo.findOne({ foo: 44 }).run(bongo.tx))
+	})
 })
 
 test("create bongo for an existing Pool", async (t) => {

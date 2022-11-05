@@ -28,8 +28,16 @@ export class DBAction<T> {
 	}
 
 	public async transact(tr: Transactor): Promise<T> {
-		for await (const conn of tr.transaction()) {
-			return await this.action(conn)
+		for await (const conn of tr.connection()) {
+			try {
+				await conn.query("BEGIN")
+				const res = await this.action(conn)
+				await conn.query("COMMIT")
+				return res
+			} catch (err) {
+				await conn.query("ROLLBACK")
+				throw err
+			}
 		}
 
 		throw new Error("failed to acquire connection from transactor")
