@@ -27,7 +27,7 @@ test("Bongo", async (t) => {
 	})
 
 	t.afterEach(async () => {
-		await foo.drop().run(bongo.tx)
+		await foo.drop().run(bongo.cp)
 	})
 
 	await t.test("foo", async (t) => {
@@ -36,14 +36,14 @@ test("Bongo", async (t) => {
 				foo: 42,
 				bar: "ouch",
 			})
-			.run(bongo.tx)
+			.run(bongo.cp)
 
 		t.ok(bongo)
 		t.ok(newFoo.id)
 
 		newFoo.foo = 22
 
-		await foo.save(newFoo).run(bongo.tx)
+		await foo.save(newFoo).run(bongo.cp)
 
 		t.ok(newFoo.foo === 22)
 	})
@@ -60,11 +60,11 @@ test("Bongo", async (t) => {
 					bar: "baz",
 				})
 			)
-			.transact(bongo.tx)
+			.transact(bongo.cp)
 
-		t.ok((await foo.find({}).run(bongo.tx)).length === 2)
-		t.ok(await foo.findOne({ foo: 44 }).run(bongo.tx))
-		t.ok(await foo.findOne({ foo: 45 }).run(bongo.tx))
+		t.ok((await foo.find({}).run(bongo.cp)).length === 2)
+		t.ok(await foo.findOne({ foo: 44 }).run(bongo.cp))
+		t.ok(await foo.findOne({ foo: 45 }).run(bongo.cp))
 	})
 
 	await t.test("foo on rollback", async (t) => {
@@ -80,10 +80,10 @@ test("Bongo", async (t) => {
 						bar: 42,
 					} as any)
 				)
-				.transact(bongo.tx)
+				.transact(bongo.cp)
 		} catch (_) {}
 
-		t.ok((await foo.find({}).run(bongo.tx)).length == 0)
+		t.ok((await foo.find({}).run(bongo.cp)).length == 0)
 	})
 
 	await t.test("foo with run and failure", async (t) => {
@@ -99,11 +99,11 @@ test("Bongo", async (t) => {
 						bar: 42,
 					} as any)
 				)
-				.run(bongo.tx)
+				.run(bongo.cp)
 		} catch (_) {}
 
-		t.ok((await foo.find({}).run(bongo.tx)).length == 1)
-		t.ok(await foo.findOne({ foo: 44 }).run(bongo.tx))
+		t.ok((await foo.find({}).run(bongo.cp)).length == 1)
+		t.ok(await foo.findOne({ foo: 44 }).run(bongo.cp))
 	})
 })
 

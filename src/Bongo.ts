@@ -1,15 +1,11 @@
 import { JTDDataType } from "ajv/dist/jtd"
-import {
-	Pool as PGPool,
-	PoolClient as PGPoolClient,
-	PoolConfig as PGPoolConfig,
-} from "pg"
+import { Pool as PGPool, PoolConfig as PGPoolConfig } from "pg"
 
 import { collection } from "./collection"
 import { Logger, newLogger } from "./logger"
 import { DocType } from "./model"
 import { migrateDown, migrateUp } from "./schema"
-import { Transactor } from "./Transactor"
+import { ConnectionProvider } from "./ConnectionProvider"
 
 function isPGPool(obj: any): obj is PGPool {
 	return obj && obj instanceof PGPool
@@ -17,7 +13,7 @@ function isPGPool(obj: any): obj is PGPool {
 
 export class Bongo {
 	public pg: PGPool
-	public tx: Transactor
+	public cp: ConnectionProvider
 	private logger: Logger
 
 	private registry: Map<string, DocType<any>> = new Map()
@@ -46,7 +42,7 @@ export class Bongo {
 			})
 		}
 
-		this.tx = new Transactor(this.pg)
+		this.cp = new ConnectionProvider(this.pg)
 	}
 
 	public collection<S>(doctype: DocType<S>) {
@@ -94,25 +90,5 @@ export class Bongo {
 
 	public async close() {
 		return this.pg.end()
-	}
-
-	public async transaction<T>(cbk: (txClient: PGPoolClient) => Promise<T>) {
-		const conn = await this.pg.connect()
-
-		try {
-			await conn.query("BEGIN")
-
-			const res = await cbk(conn)
-
-			await conn.query("COMMIT")
-
-			return res
-		} catch (err) {
-			await conn.query("ROLLBACK")
-
-			throw err
-		} finally {
-			conn.release()
-		}
 	}
 }

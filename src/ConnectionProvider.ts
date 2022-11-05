@@ -1,13 +1,13 @@
 import { Pool, PoolClient } from "pg"
 
-export class Transactor {
+export class ConnectionProvider {
 	private readonly pg: Pool
 
 	constructor(pg: Pool) {
 		this.pg = pg
 	}
 
-	public async *connection(): AsyncGenerator<PoolClient> {
+	public async *next(): AsyncGenerator<PoolClient> {
 		const conn = await this.pg.connect()
 
 		try {

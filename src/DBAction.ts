@@ -1,5 +1,5 @@
 import { PoolClient } from "pg"
-import { Transactor } from "./Transactor"
+import { ConnectionProvider } from "./ConnectionProvider"
 import { isPromise } from "./utils"
 
 export class DBAction<T> {
@@ -19,16 +19,16 @@ export class DBAction<T> {
 		)
 	}
 
-	public async run(tr: Transactor): Promise<T> {
-		for await (const conn of tr.connection()) {
+	public async run(cp: ConnectionProvider): Promise<T> {
+		for await (const conn of cp.next()) {
 			return await this.action(conn)
 		}
 
-		throw new Error("failed to acquire connection from transactor")
+		throw new Error("failed to acquire connection from connection provider")
 	}
 
-	public async transact(tr: Transactor): Promise<T> {
-		for await (const conn of tr.connection()) {
+	public async transact(cp: ConnectionProvider): Promise<T> {
+		for await (const conn of cp.next()) {
 			try {
 				await conn.query("BEGIN")
 				const res = await this.action(conn)
@@ -40,7 +40,7 @@ export class DBAction<T> {
 			}
 		}
 
-		throw new Error("failed to acquire connection from transactor")
+		throw new Error("failed to acquire connection from connection provider")
 	}
 }
 
