@@ -57,3 +57,87 @@ export function pure<T>(p: Promise<T> | T): DBAction<T> {
 		return new DBAction((_: PoolClient) => Promise.resolve(p))
 	}
 }
+
+export function chain<A>(action: DBAction<A>): DBAction<A>
+export function chain<A, B>(
+	action: DBAction<A>,
+	action2: (input: A) => DBAction<B>
+): DBAction<B>
+export function chain<A, B, C>(
+	action: DBAction<A>,
+	action2: (input: A) => DBAction<B>,
+	action3: (input: B) => DBAction<C>
+): DBAction<C>
+export function chain<A, B, C, D>(
+	action: DBAction<A>,
+	action2: (input: A) => DBAction<B>,
+	action3: (input: B) => DBAction<C>,
+	action4: (input: C) => DBAction<D>
+): DBAction<D>
+export function chain<A, B, C, D, E>(
+	action: DBAction<A>,
+	action2: (input: A) => DBAction<B>,
+	action3: (input: B) => DBAction<C>,
+	action4: (input: C) => DBAction<D>,
+	action5: (input: D) => DBAction<E>
+): DBAction<E>
+export function chain<A, B, C, D, E, F>(
+	action: DBAction<A>,
+	action2: (input: A) => DBAction<B>,
+	action3: (input: B) => DBAction<C>,
+	action4: (input: C) => DBAction<D>,
+	action5: (input: D) => DBAction<E>,
+	action6: (input: E) => DBAction<F>
+): DBAction<F>
+export function chain<A, B, C, D, E, F, G>(
+	action: DBAction<A>,
+	action2: (input: A) => DBAction<B>,
+	action3: (input: B) => DBAction<C>,
+	action4: (input: C) => DBAction<D>,
+	action5: (input: D) => DBAction<E>,
+	action6: (input: E) => DBAction<F>,
+	action7: (input: F) => DBAction<G>
+): DBAction<G>
+export function chain<A, B, C, D, E, F, G, H>(
+	action: DBAction<A>,
+	action2: (input: A) => DBAction<B>,
+	action3: (input: B) => DBAction<C>,
+	action4: (input: C) => DBAction<D>,
+	action5: (input: D) => DBAction<E>,
+	action6: (input: E) => DBAction<F>,
+	action7: (input: F) => DBAction<G>,
+	action8: (input: G) => DBAction<H>
+): DBAction<H>
+export function chain<A, B, C, D, E, F, G, H, I>(
+	action: DBAction<A>,
+	action2: (input: A) => DBAction<B>,
+	action3: (input: B) => DBAction<C>,
+	action4: (input: C) => DBAction<D>,
+	action5: (input: D) => DBAction<E>,
+	action6: (input: E) => DBAction<F>,
+	action7: (input: F) => DBAction<G>,
+	action8: (input: G) => DBAction<H>,
+	action9: (input: H) => DBAction<I>
+): DBAction<I>
+export function chain<A, B, C, D, E, F, G, H, I, J>(
+	action: DBAction<A>,
+	action2: (input: A) => DBAction<B>,
+	action3: (input: B) => DBAction<C>,
+	action4: (input: C) => DBAction<D>,
+	action5: (input: D) => DBAction<E>,
+	action6: (input: E) => DBAction<F>,
+	action7: (input: F) => DBAction<G>,
+	action8: (input: G) => DBAction<H>,
+	action9: (input: H) => DBAction<I>,
+	action10: (input: I) => DBAction<J>
+): DBAction<J>
+export function chain(
+	action: DBAction<any>,
+	...args: ((input: any) => DBAction<any>)[]
+): DBAction<any> {
+	if (!args || args.length === 0) {
+		return action
+	}
+
+	return args.reduce((acc, next) => acc.flatMap((res) => next(res)), action)
+}

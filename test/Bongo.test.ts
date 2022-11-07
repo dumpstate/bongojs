@@ -1,6 +1,7 @@
 import { Pool } from "pg"
 import { test } from "tap"
 import { Bongo } from "../src/Bongo"
+import { chain } from "../src/DBAction"
 
 test("Bongo", async (t) => {
 	const bongo = new Bongo()
@@ -104,6 +105,23 @@ test("Bongo", async (t) => {
 
 		t.ok((await foo.find({}).run(bongo.cp)).length == 1)
 		t.ok(await foo.findOne({ foo: 44 }).run(bongo.cp))
+	})
+
+	await t.test("foo with chain of actions", async (t) => {
+		const items = await chain(
+			foo.create({ foo: 52, bar: "foo" }),
+			() => foo.findOne({ foo: 52 }),
+			(item) => {
+				if (!item) {
+					throw Error("item not found")
+				}
+
+				return foo.create({ foo: 53, bar: `${item.foo}foo` })
+			},
+			() => foo.find({})
+		).transact(bongo.cp)
+
+		t.ok(items.length === 2)
 	})
 })
 
