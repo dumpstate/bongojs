@@ -34,6 +34,12 @@ export function collection<S, T>(doctype: DocType<S>): Collection<T> {
 		additionalProperties: false,
 	})
 	const partition = partitionName(doctype)
+	const defaultOptionalProps = Object.keys(
+		(doctype.schema as any)["optionalProperties"] || {}
+	).reduce((acc: any, next) => {
+		acc[next] = undefined
+		return acc
+	}, {})
 
 	function instance(id: string, obj: T) {
 		if (!validate(obj)) {
@@ -41,6 +47,7 @@ export function collection<S, T>(doctype: DocType<S>): Collection<T> {
 		}
 
 		return Object.seal({
+			...defaultOptionalProps,
 			...obj,
 			id,
 		})

@@ -1,6 +1,6 @@
 export * from "./Bongo"
 export * from "./model"
 export { Collection } from "./collection"
-export { DBAction, pure } from "./DBAction"
+export { DBAction, chain, pure } from "./DBAction"
 export { Query } from "./query"
 export { ConnectionProvider } from "./ConnectionProvider"
