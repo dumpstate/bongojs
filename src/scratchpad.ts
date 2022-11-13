@@ -6,12 +6,8 @@ async function main() {
 	const foo = bongo.collection({
 		name: "doctype:foo",
 		schema: {
-			properties: {
-				foo: { type: "int32" },
-			},
-			optionalProperties: {
-				bar: { type: "string" },
-			},
+			foo: { type: "int32" },
+			bar: { type: "string" },
 		} as const,
 	})
 

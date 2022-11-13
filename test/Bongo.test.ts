@@ -9,12 +9,8 @@ test("Bongo", async (t) => {
 		name: "foo",
 		prefix: "foo",
 		schema: {
-			properties: {
-				foo: { type: "int32" },
-			},
-			optionalProperties: {
-				bar: { type: "string" },
-			},
+			foo: { type: "int32" },
+			bar: { type: "string" },
 		} as const,
 	})
 

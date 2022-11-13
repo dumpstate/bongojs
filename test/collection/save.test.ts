@@ -7,14 +7,9 @@ test("collection.save", async (t) => {
 	const foo = bongo.collection({
 		name: "doc:foo:save",
 		schema: {
-			properties: {
-				foo: { type: "int32" },
-			},
-			optionalProperties: {
-				bar: {
-					type: "int32",
-					nullable: true,
-				},
+			foo: { type: "int32" },
+			bar: {
+				type: "int32",
 			},
 		} as const,
 	})

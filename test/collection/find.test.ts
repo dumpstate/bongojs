@@ -8,12 +8,8 @@ test("collection.find", async (t) => {
 	const foo = bongo.collection({
 		name: "doc:foo:find",
 		schema: {
-			properties: {
-				foo: { type: "int32" },
-			},
-			optionalProperties: {
-				bar: { type: "int32" },
-			},
+			foo: { type: "int32" },
+			bar: { type: "int32" },
 		} as const,
 	})
 

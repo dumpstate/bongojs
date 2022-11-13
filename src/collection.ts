@@ -4,7 +4,7 @@ import { PoolClient as PGPoolClient } from "pg"
 import { DEFAULT_LIMIT } from "./constants"
 import { DBAction, flatten } from "./DBAction"
 import { nextId } from "./ids"
-import { DocType, partitionName } from "./model"
+import { DocType, partitionName, SchemaTypeDef } from "./model"
 import { Query, whereClause } from "./query"
 import { omit } from "./utils"
 
@@ -27,21 +27,24 @@ export interface Collection<T> {
 	save: (obj: T & DocumentMeta) => DBAction<T & DocumentMeta>
 }
 
-export function collection<S, T>(doctype: DocType<S>): Collection<T> {
+export function collection<S extends SchemaTypeDef, T>(
+	doctype: DocType<S>
+): Collection<T> {
 	const ajv = new Ajv()
-	const validate = ajv.compile<T>({
-		...doctype.schema,
+	const validate = ajv.compile({
+		optionalProperties: doctype.schema,
 		additionalProperties: false,
 	})
 	const partition = partitionName(doctype)
-	const defaultOptionalProps = Object.keys(
-		(doctype.schema as any)["optionalProperties"] || {}
-	).reduce((acc: any, next) => {
-		acc[next] = undefined
-		return acc
-	}, {})
+	const defaultOptionalProps = Object.keys(doctype.schema).reduce(
+		(acc: any, next) => {
+			acc[next] = undefined
+			return acc
+		},
+		{}
+	)
 
-	function instance(id: string, obj: T) {
+	function instance(id: string, obj: T): T & DocumentMeta {
 		if (!validate(obj)) {
 			throw new Error(`ValidationError: ${JSON.stringify(obj)}`)
 		}

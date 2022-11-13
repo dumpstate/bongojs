@@ -1,5 +1,5 @@
 import { ID_LENGTH } from "./constants"
-import { DocType } from "./model"
+import { DocType, SchemaTypeDef } from "./model"
 
 const ALPHABET =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
@@ -25,7 +25,7 @@ function newIdGenerator() {
 	}
 }
 
-export function nextId<T>(doctype: DocType<T>): string {
+export function nextId<T extends SchemaTypeDef>(doctype: DocType<T>): string {
 	if (!idGenerator) {
 		idGenerator = newIdGenerator()
 	}

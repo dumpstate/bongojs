@@ -1,19 +1,15 @@
-import { JTDDataType } from "ajv/dist/jtd"
 import { test } from "tap"
+import { SchemaType } from "../src/model"
 
 import { Query, SqlClause, whereClause } from "../src/query"
 
 const EntitySchema = {
-	properties: {
-		foo: { type: "int32" },
-		bar: { type: "string" },
-	},
-	optionalProperties: {
-		baz: { type: "boolean" },
-	},
+	foo: { type: "int32" },
+	bar: { type: "string" },
+	baz: { type: "boolean" },
 } as const
 
-type Entity = JTDDataType<typeof EntitySchema>
+type Entity = SchemaType<typeof EntitySchema>
 
 const testCases: [Query<Entity>, SqlClause][] = [
 	[

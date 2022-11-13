@@ -1,9 +1,8 @@
-import { JTDDataType } from "ajv/dist/jtd"
 import { Pool as PGPool, PoolConfig as PGPoolConfig } from "pg"
 
 import { collection } from "./collection"
 import { Logger, newLogger } from "./logger"
-import { DocType } from "./model"
+import { DocType, SchemaType, SchemaTypeDef } from "./model"
 import { migrateDown, migrateUp } from "./schema"
 import { ConnectionProvider } from "./ConnectionProvider"
 
@@ -45,7 +44,7 @@ export class Bongo {
 		this.cp = new ConnectionProvider(this.pg)
 	}
 
-	public collection<S>(doctype: DocType<S>) {
+	public collection<S extends SchemaTypeDef>(doctype: DocType<S>) {
 		if (this.registry.has(doctype.name)) {
 			throw new Error(`DocType ${doctype.name} already registered`)
 		}
@@ -67,7 +66,7 @@ export class Bongo {
 		this.registry.set(doctype.name, doctype)
 
 		const { schema } = doctype
-		type DataType = JTDDataType<typeof schema>
+		type DataType = SchemaType<typeof schema>
 
 		return collection<S, DataType>(doctype)
 	}
