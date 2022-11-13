@@ -4,27 +4,33 @@ import { PoolClient as PGPoolClient } from "pg"
 import { DEFAULT_LIMIT } from "./constants"
 import { DBAction, flatten } from "./DBAction"
 import { nextId } from "./ids"
-import { DocType, partitionName, SchemaTypeDef } from "./model"
+import {
+	DocumentMeta,
+	DocType,
+	partitionName,
+	SchemaTypeDef,
+	InstantGetters,
+} from "./model"
 import { Query, whereClause } from "./query"
 import { omit } from "./utils"
 
-export interface DocumentMeta {
-	readonly id: string
-}
-
 export interface Collection<T> {
-	create: (obj: T) => DBAction<T & DocumentMeta>
-	createAll: (objs: T[]) => DBAction<(T & DocumentMeta)[]>
+	create: (obj: T) => DBAction<T & DocumentMeta & InstantGetters<T>>
+	createAll: (objs: T[]) => DBAction<(T & DocumentMeta & InstantGetters<T>)[]>
 	deleteById: (id: string) => DBAction<boolean>
 	drop: () => DBAction<number>
 	find: (
 		query: Query<T>,
 		limit?: number,
 		offset?: number
-	) => DBAction<(T & DocumentMeta)[]>
-	findById: (id: string) => DBAction<T>
-	findOne: (query: Query<T>) => DBAction<(T & DocumentMeta) | null>
-	save: (obj: T & DocumentMeta) => DBAction<T & DocumentMeta>
+	) => DBAction<(T & DocumentMeta & InstantGetters<T>)[]>
+	findById: (id: string) => DBAction<T & DocumentMeta & InstantGetters<T>>
+	findOne: (
+		query: Query<T>
+	) => DBAction<(T & DocumentMeta & InstantGetters<T>) | null>
+	save: (
+		obj: T & DocumentMeta
+	) => DBAction<T & DocumentMeta & InstantGetters<T>>
 }
 
 export function collection<S extends SchemaTypeDef, T>(
@@ -43,15 +49,34 @@ export function collection<S extends SchemaTypeDef, T>(
 		},
 		{}
 	)
+	const getters = Object.keys(doctype.schema).reduce((acc: any, next) => {
+		return Object.defineProperty(acc, `${next}$`, {
+			get() {
+				const val = this[next]
 
-	function instance(id: string, obj: T): T & DocumentMeta {
-		if (!validate(obj)) {
-			throw new Error(`ValidationError: ${JSON.stringify(obj)}`)
+				if (val == undefined || val == null) {
+					throw Error(`expected '${next}' to be defined and not null`)
+				}
+
+				return val
+			},
+		})
+	}, {})
+
+	function instance(
+		id: string,
+		obj: T
+	): T & DocumentMeta & InstantGetters<T> {
+		const doc = omit(obj, ["id", "doctype"])
+
+		if (!validate(doc)) {
+			throw new Error(`ValidationError: ${JSON.stringify(doc)}`)
 		}
 
 		return Object.seal({
 			...defaultOptionalProps,
-			...obj,
+			...getters,
+			...(doc as any),
 			id,
 		})
 	}
@@ -60,7 +85,7 @@ export function collection<S extends SchemaTypeDef, T>(
 		query: Query<T>,
 		limit: number = DEFAULT_LIMIT,
 		offset: number = 0
-	): DBAction<(T & DocumentMeta)[]> {
+	): DBAction<(T & DocumentMeta & InstantGetters<T>)[]> {
 		const { text, values } = whereClause<T>(query)
 
 		return new DBAction(async (conn: PGPoolClient) => {
@@ -79,7 +104,9 @@ export function collection<S extends SchemaTypeDef, T>(
 		})
 	}
 
-	function findOne(query: Query<T>): DBAction<(T & DocumentMeta) | null> {
+	function findOne(
+		query: Query<T>
+	): DBAction<(T & DocumentMeta & InstantGetters<T>) | null> {
 		return find(query).map((items) => {
 			if (items.length > 1) {
 				throw new Error("too many items found")
@@ -89,7 +116,7 @@ export function collection<S extends SchemaTypeDef, T>(
 				return null
 			}
 
-			return items[0] as T & DocumentMeta
+			return items[0] as T & DocumentMeta & InstantGetters<T>
 		})
 	}
 
@@ -120,7 +147,7 @@ export function collection<S extends SchemaTypeDef, T>(
 		})
 	}
 
-	function create(obj: T): DBAction<T & DocumentMeta> {
+	function create(obj: T): DBAction<T & DocumentMeta & InstantGetters<T>> {
 		if (!validate(obj)) {
 			throw new Error("ValidationError")
 		}
@@ -128,7 +155,9 @@ export function collection<S extends SchemaTypeDef, T>(
 		return save(instance(nextId(doctype), obj))
 	}
 
-	function createAll(objs: T[]): DBAction<(T & DocumentMeta)[]> {
+	function createAll(
+		objs: T[]
+	): DBAction<(T & DocumentMeta & InstantGetters<T>)[]> {
 		return flatten(objs.map((obj) => save(instance(nextId(doctype), obj))))
 	}
 
@@ -155,7 +184,9 @@ export function collection<S extends SchemaTypeDef, T>(
 		})
 	}
 
-	function save(obj: T & DocumentMeta): DBAction<T & DocumentMeta> {
+	function save(
+		obj: T & DocumentMeta
+	): DBAction<T & DocumentMeta & InstantGetters<T>> {
 		const doc = omit(obj, ["id", "doctype"])
 
 		if (!validate(doc)) {
@@ -178,7 +209,7 @@ export function collection<S extends SchemaTypeDef, T>(
 				throw new Error("inconsistent update, expected one row update")
 			}
 
-			return obj
+			return instance(obj.id, obj)
 		})
 	}
 

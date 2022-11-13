@@ -1,5 +1,19 @@
 import { DOCUMENT_TABLE } from "./constants"
 
+export interface DocumentMeta {
+	readonly id: string
+}
+
+type IsNullable<k extends keyof T, T> = null extends T[k] ? k : never
+
+type NullableOnly<T> = {
+	[k in keyof T as IsNullable<k, T>]: T[k]
+}
+
+export type InstantGetters<T> = {
+	readonly [k in keyof NullableOnly<T> & string as `${k}$`]: NonNullable<T[k]>
+}
+
 export type NumberType =
 	| "int8"
 	| "uint8"
