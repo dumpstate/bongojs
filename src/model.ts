@@ -12,7 +12,7 @@ export type NumberType =
 
 export type SchemaDefinitionValueType =
 	| { type: NumberType | "string" | "timestamp" | "boolean" }
-	| { enum: string[] }
+	| { enum: readonly string[] }
 	| { elements: SchemaDefinitionValueType }
 	| { values: SchemaDefinitionValueType }
 	| { properties: Record<string, SchemaDefinitionValueType> }

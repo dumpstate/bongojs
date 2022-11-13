@@ -11,6 +11,7 @@ test("Bongo", async (t) => {
 		schema: {
 			foo: { type: "int32" },
 			bar: { type: "string" },
+			baz: { enum: ["FOO", "BAR"] },
 		} as const,
 	})
 
@@ -32,6 +33,7 @@ test("Bongo", async (t) => {
 			.create({
 				foo: 42,
 				bar: "ouch",
+				baz: "FOO",
 			})
 			.run(bongo.cp)
 
