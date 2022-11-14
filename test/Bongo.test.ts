@@ -121,6 +121,21 @@ test("Bongo", async (t) => {
 
 		t.ok(items.length === 2)
 	})
+
+	await t.test(
+		"foo unsafe getters return same as regular getters",
+		async (t) => {
+			const item = await foo
+				.create({
+					foo: 42,
+					bar: "foo",
+				})
+				.transact(bongo.cp)
+
+			t.equal(item.foo$, item.foo)
+			t.equal(item.bar$, item.bar)
+		}
+	)
 })
 
 test("create bongo for an existing Pool", async (t) => {

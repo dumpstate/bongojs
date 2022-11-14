@@ -4,6 +4,8 @@ export interface DocumentMeta {
 	readonly id: string
 }
 
+export type Document<T> = T & DocumentMeta & UnsafeGetters<T>
+
 type IsNullable<k extends keyof T, T> = null extends T[k] ? k : never
 
 type NullableOnly<T> = {
