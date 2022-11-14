@@ -45,20 +45,25 @@ export function collection<S extends SchemaTypeDef, T>(
 		},
 		{}
 	)
-	const unsafeGetters = Object.keys(doctype.schema).reduce((acc: any, next) => {
-		acc[`${next}$`] = {
-			get () {
-				const val = this[next]
+	const unsafeGetters = Object.keys(doctype.schema).reduce(
+		(acc: any, next) => {
+			acc[`${next}$`] = {
+				get() {
+					const val = this[next]
 
-				if (val === undefined || val === null) {
-					throw Error(`expected '${next}' to be deinfed and not null`)
-				}
+					if (val === undefined || val === null) {
+						throw Error(
+							`expected '${next}' to be deinfed and not null`
+						)
+					}
 
-				return val
+					return val
+				},
 			}
-		}
-		return acc
-	}, {})
+			return acc
+		},
+		{}
+	)
 
 	function withUnsafeGetters(obj: T & DocumentMeta): Document<T> {
 		return Object.defineProperties(obj, unsafeGetters) as Document<T>
