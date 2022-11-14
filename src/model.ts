@@ -10,7 +10,7 @@ type NullableOnly<T> = {
 	[k in keyof T as IsNullable<k, T>]: T[k]
 }
 
-export type InstantGetters<T> = {
+export type UnsafeGetters<T> = {
 	readonly [k in keyof NullableOnly<T> & string as `${k}$`]: NonNullable<T[k]>
 }
 
