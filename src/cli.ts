@@ -17,6 +17,7 @@ function loadBongo(path?: string): Bongo {
 
 			return bongo
 		} catch (err) {
+			console.error(err)
 			throw new Error(`bongo not found at: ${absPath}`)
 		}
 	}
