@@ -10,12 +10,14 @@ const program = new Command()
 
 function loadBongo(path?: string): Bongo {
 	if (path) {
+		const absPath = join(process.cwd(), path)
+
 		try {
-			const { bongo } = require(join(process.cwd(), path))
+			const { bongo } = require(absPath)
 
 			return bongo
 		} catch (err) {
-			throw new Error(`bongo not found at: ${path}`)
+			throw new Error(`bongo not found at: ${absPath}`)
 		}
 	}
 
