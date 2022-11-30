@@ -175,4 +175,86 @@ test("collection.find", async (t) => {
 
 		t.match(actual, [{ foo: 2 }, { foo: 2, bar: 4 }, { foo: 3 }])
 	})
+
+	await t.test("find with limit", async (t) => {
+		await foo.createAll([{ foo: 1 }, { foo: 2 }, { foo: 3 }]).transact(cp)
+
+		const actual = await foo.find({}, { limit: 2 }).run(cp)
+
+		t.match(actual, [{ foo: 1 }, { foo: 2 }])
+	})
+
+	await t.test("find with offset and limit", async (t) => {
+		await foo.createAll([{ foo: 1 }, { foo: 2 }, { foo: 3 }]).transact(cp)
+
+		const actual = await foo.find({}, { limit: 3, offset: 1 }).run(cp)
+
+		t.match(actual, [{ foo: 2 }, { foo: 3 }])
+	})
+
+	await t.test("find with sort, ascending", async (t) => {
+		await foo
+			.createAll([
+				{ foo: 1, bar: 2 },
+				{ foo: 2, bar: 1 },
+				{ foo: 3, bar: 3 },
+			])
+			.transact(cp)
+
+		const actual = await foo.find({}, { sort: [["bar", "ASC"]] }).run(cp)
+
+		t.match(actual, [
+			{ foo: 2, bar: 1 },
+			{ foo: 1, bar: 2 },
+			{ foo: 3, bar: 3 },
+		])
+	})
+
+	await t.test("find with sort, descending", async (t) => {
+		await foo
+			.createAll([
+				{ foo: 1, bar: 2 },
+				{ foo: 1, bar: 1 },
+				{ foo: 3, bar: 3 },
+			])
+			.transact(cp)
+
+		const actual = await foo.find({}, { sort: [["bar", "DESC"]] }).run(cp)
+
+		t.match(actual, [
+			{ foo: 3, bar: 3 },
+			{ foo: 1, bar: 2 },
+			{ foo: 1, bar: 1 },
+		])
+	})
+
+	await t.test("find with sort, multiple props", async (t) => {
+		await foo
+			.createAll([
+				{ foo: 3, bar: 2 },
+				{ foo: 1, bar: 1 },
+				{ foo: 1, bar: 4 },
+				{ foo: 2, bar: 3 },
+			])
+			.transact(cp)
+
+		const actual = await foo
+			.find(
+				{},
+				{
+					sort: [
+						["foo", "ASC"],
+						["bar", "DESC"],
+					],
+				}
+			)
+			.run(cp)
+
+		t.match(actual, [
+			{ foo: 1, bar: 4 },
+			{ foo: 1, bar: 1 },
+			{ foo: 2, bar: 3 },
+			{ foo: 3, bar: 2 },
+		])
+	})
 })

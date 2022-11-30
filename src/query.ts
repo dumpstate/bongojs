@@ -73,7 +73,15 @@ type GteOp<Q> = { $gte: Q }
 type LtOp<Q> = { $lt: Q }
 type LteOp<Q> = { $lte: Q }
 
+type SortDirection = "ASC" | "DESC"
+
 export type Query<T> = QueryableProps<T> | BooleanOps<T> | {}
+
+export type QueryOpts<T> = {
+	offset?: number
+	limit?: number
+	sort?: [keyof T, SortDirection][]
+}
 
 function ipltJSONPath(value: string | number | boolean | null): string {
 	if (value === null) {
@@ -326,5 +334,20 @@ export function whereClause<T>(
 		return clauses[0] as SqlClause
 	} else {
 		return { text: "true", values: [] }
+	}
+}
+
+export function orderByClause<T>(
+	sort: [keyof T, SortDirection][],
+	targetColumn: string = "doc"
+): SqlClause {
+	return {
+		text: sort
+			.map(
+				([key, direction]) =>
+					`${targetColumn}->'${String(key)}' ${direction}`
+			)
+			.join(", "),
+		values: [],
 	}
 }

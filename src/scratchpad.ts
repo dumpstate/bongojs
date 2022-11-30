@@ -35,7 +35,7 @@ async function main() {
 				foo: 22,
 				// bar: 'yeah',
 			},
-			2
+			{ limit: 2 }
 		)
 		.run(bongo.cp)
 

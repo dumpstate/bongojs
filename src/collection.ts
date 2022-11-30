@@ -11,7 +11,7 @@ import {
 	partitionName,
 	SchemaTypeDef,
 } from "./model"
-import { Query, whereClause } from "./query"
+import { Query, QueryOpts, whereClause, orderByClause } from "./query"
 import { omit } from "./utils"
 
 export interface Collection<T> {
@@ -19,11 +19,7 @@ export interface Collection<T> {
 	createAll: (objs: T[]) => DBAction<Document<T>[]>
 	deleteById: (id: string) => DBAction<boolean>
 	drop: () => DBAction<number>
-	find: (
-		query: Query<T>,
-		limit?: number,
-		offset?: number
-	) => DBAction<Document<T>[]>
+	find: (query: Query<T>, opts?: QueryOpts<T>) => DBAction<Document<T>[]>
 	findById: (id: string) => DBAction<Document<T>>
 	findOne: (query: Query<T>) => DBAction<Document<T> | null>
 	save: (obj: T & DocumentMeta) => DBAction<Document<T>>
@@ -87,17 +83,23 @@ export function collection<S extends SchemaTypeDef, T>(
 
 	function find(
 		query: Query<T>,
-		limit: number = DEFAULT_LIMIT,
-		offset: number = 0
+		opts?: QueryOpts<T>
 	): DBAction<Document<T>[]> {
-		const { text, values } = whereClause<T>(query)
+		const offset = opts?.offset || 0
+		const limit = opts?.limit || DEFAULT_LIMIT
+		const { text: where, values: whereValues } = whereClause<T>(query)
+		const { text: orderBy, values: orderByValues } = orderByClause<T>(
+			opts?.sort || []
+		)
+		const values = whereValues.concat(orderByValues)
 
 		return new DBAction(async (conn: PGPoolClient) => {
 			const res = await conn.query(
 				`
 					SELECT id, doc
 					FROM ${partition}
-					WHERE doctype = $${values.length + 1} AND ${text}
+					WHERE doctype = $${values.length + 1} AND ${where}
+					${orderBy.length ? "ORDER BY " + orderBy : ""}
 					LIMIT $${values.length + 2}
 					OFFSET $${values.length + 3}
 				`,
