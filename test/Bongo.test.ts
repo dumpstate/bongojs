@@ -1,7 +1,7 @@
 import { Pool } from "pg"
 import { test } from "tap"
 import { Bongo } from "../src/Bongo"
-import { chain } from "../src/DBAction"
+import { chain, sequence } from "../src/DBAction"
 
 test("Bongo", async (t) => {
 	const bongo = new Bongo()
@@ -120,6 +120,29 @@ test("Bongo", async (t) => {
 		).transact(bongo.cp)
 
 		t.ok(items.length === 2)
+	})
+
+	await t.test("find foo in a sequence", async (t) => {
+		await foo
+			.createAll([
+				{ foo: 52 },
+				{ foo: 53 },
+				{ foo: 54 },
+				{ foo: 55 },
+				{ foo: 56 },
+			])
+			.transact(bongo.cp)
+
+		const items = await sequence(
+			foo.find({ foo: 53 }),
+			foo.find({ foo: 55 }),
+			foo.find({ foo: 52 })
+		).run(bongo.cp)
+
+		t.ok(items.length === 3)
+		t.match(items[0], [{ foo: 53 }])
+		t.match(items[1], [{ foo: 55 }])
+		t.match(items[2], [{ foo: 52 }])
 	})
 
 	await t.test(

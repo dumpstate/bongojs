@@ -3,25 +3,31 @@ import { ConnectionProvider } from "./ConnectionProvider"
 import { isPromise } from "./utils"
 
 export class DBAction<T> {
-	private readonly action: (conn: PoolClient) => Promise<T>
+	private readonly _action: (conn: PoolClient) => Promise<T>
 
 	constructor(action: (conn: PoolClient) => Promise<T>) {
-		this.action = action
+		this._action = action
+	}
+
+	get action(): (conn: PoolClient) => Promise<T> {
+		return this._action
 	}
 
 	public map<K>(fn: (item: T) => K): DBAction<K> {
-		return new DBAction<K>((conn: PoolClient) => this.action(conn).then(fn))
+		return new DBAction<K>((conn: PoolClient) =>
+			this._action(conn).then(fn)
+		)
 	}
 
 	public flatMap<K>(fn: (item: T) => DBAction<K>): DBAction<K> {
 		return new DBAction<K>((conn: PoolClient) =>
-			this.action(conn).then((item) => fn(item).action(conn))
+			this._action(conn).then((item) => fn(item)._action(conn))
 		)
 	}
 
 	public async run(cp: ConnectionProvider): Promise<T> {
 		for await (const conn of cp.next()) {
-			return await this.action(conn)
+			return await this._action(conn)
 		}
 
 		throw new Error("failed to acquire connection from connection provider")
@@ -31,7 +37,7 @@ export class DBAction<T> {
 		for await (const conn of cp.next()) {
 			try {
 				await conn.query("BEGIN")
-				const res = await this.action(conn)
+				const res = await this._action(conn)
 				await conn.query("COMMIT")
 				return res
 			} catch (err) {
@@ -140,4 +146,47 @@ export function chain(
 	}
 
 	return args.reduce((acc, next) => acc.flatMap((res) => next(res)), action)
+}
+
+export function sequence<A, B>(
+	action: DBAction<A>,
+	action2: DBAction<B>
+): DBAction<[A, B]>
+export function sequence<A, B, C>(
+	action: DBAction<A>,
+	action2: DBAction<B>,
+	action3: DBAction<C>
+): DBAction<[A, B, C]>
+export function sequence<A, B, C, D>(
+	action: DBAction<A>,
+	action2: DBAction<B>,
+	action3: DBAction<C>,
+	action4: DBAction<D>
+): DBAction<[A, B, C, D]>
+export function sequence<A, B, C, D, E>(
+	action: DBAction<A>,
+	action2: DBAction<B>,
+	action3: DBAction<C>,
+	action4: DBAction<D>,
+	action5: DBAction<E>
+): DBAction<[A, B, C, D, E]>
+export function sequence<A, B, C, D, E, F>(
+	action: DBAction<A>,
+	action2: DBAction<B>,
+	action3: DBAction<C>,
+	action4: DBAction<D>,
+	action5: DBAction<E>,
+	action6: DBAction<F>
+): DBAction<[A, B, C, D, E, F]>
+export function sequence(
+	action: DBAction<any>,
+	...args: DBAction<any>[]
+): DBAction<any> {
+	if (!args || args.length === 0) {
+		return action
+	}
+
+	return new DBAction((conn: PoolClient) =>
+		Promise.all([action, ...args].map((act) => act.action(conn)))
+	)
 }
