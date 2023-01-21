@@ -175,3 +175,63 @@ test("create bongo for an existing Pool", async (t) => {
 		t.ok(res)
 	})
 })
+
+test("create bongo with collection of discriminated union objects", async (t) => {
+	const bongo = new Bongo()
+	const baz = bongo.collection({
+		name: "baz",
+		prefix: "baz",
+		schema: {
+			baz: {
+				discriminator: "type",
+				mapping: {
+					FOO: {
+						properties: {
+							foo: { type: "int32" },
+						},
+					},
+					BAR: {
+						properties: {
+							bar: { type: "string" },
+						},
+					},
+				},
+			},
+		} as const,
+	})
+
+	t.before(async () => {
+		await bongo.migrate()
+	})
+
+	t.teardown(async () => {
+		await bongo.drop()
+		await bongo.close()
+	})
+
+	t.afterEach(async () => {
+		await baz.drop().run(bongo.cp)
+	})
+
+	await t.test("baz", async (t) => {
+		const items = await baz
+			.createAll([
+				{
+					baz: {
+						type: "FOO",
+						foo: 44,
+					},
+				},
+				{
+					baz: {
+						type: "BAR",
+						bar: "bar",
+					},
+				},
+			])
+			.transact(bongo.cp)
+
+		t.match(items[0].baz, { type: "FOO", foo: 44 })
+		t.match(items[1].baz, { type: "BAR", bar: "bar" })
+	})
+})

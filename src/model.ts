@@ -32,6 +32,10 @@ export type SchemaDefinitionValueType =
 	| { elements: SchemaDefinitionValueType }
 	| { values: SchemaDefinitionValueType }
 	| { properties: Record<string, SchemaDefinitionValueType> }
+	| {
+			discriminator: string
+			mapping: Record<string, SchemaDefinitionValueType>
+	  }
 
 export type ValidKey = Exclude<string, "id">
 
@@ -57,6 +61,14 @@ export type SchemaType<S> = S extends { type: NumberType }
 	? Record<ValidKey, SchemaType<E>>
 	: S extends { properties: infer E extends SchemaTypeDef }
 	? SchemaType<E>
+	: S extends { discriminator: infer E; mapping: Record<string, unknown> }
+	? [E] extends [string]
+		? {
+				[K in keyof S["mapping"]]: SchemaType<S["mapping"][K]> & {
+					[KE in E]: K
+				}
+		  }[keyof S["mapping"]]
+		: never
 	: S extends SchemaTypeDef
 	? {
 			-readonly [k in keyof S]+?: k extends ValidKey
