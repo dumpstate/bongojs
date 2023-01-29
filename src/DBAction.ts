@@ -1,6 +1,6 @@
 import { PoolClient } from "pg"
 import { ConnectionProvider } from "./ConnectionProvider"
-import { isPromise } from "./utils"
+import { isFunction, isPromise } from "./utils"
 
 export class DBAction<T> {
 	private readonly _action: (conn: PoolClient) => Promise<T>
@@ -56,9 +56,11 @@ export function flatten<T>(actions: DBAction<T>[]): DBAction<T[]> {
 	}, pure<T[]>([]))
 }
 
-export function pure<T>(p: Promise<T> | T): DBAction<T> {
+export function pure<T>(p: Promise<T> | T | (() => Promise<T>)): DBAction<T> {
 	if (isPromise(p)) {
 		return new DBAction((_: PoolClient) => p)
+	} else if (isFunction(p)) {
+		return new DBAction((_: PoolClient) => p())
 	} else {
 		return new DBAction((_: PoolClient) => Promise.resolve(p))
 	}
