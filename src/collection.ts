@@ -23,6 +23,7 @@ export interface Collection<T> {
 	findById: (id: string) => DBAction<Document<T>>
 	findOne: (query: Query<T>) => DBAction<Document<T> | null>
 	save: (obj: T & DocumentMeta) => DBAction<Document<T>>
+	count: (query: Query<T>) => DBAction<number>
 }
 
 export function collection<S extends SchemaTypeDef, T>(
@@ -213,6 +214,23 @@ export function collection<S extends SchemaTypeDef, T>(
 		})
 	}
 
+	function count(query: Query<T>): DBAction<number> {
+		const { text: where, values } = whereClause<T>(query)
+
+		return new DBAction(async (conn: PGPoolClient) => {
+			const res = await conn.query(
+				`
+					SELECT COUNT(*) AS total
+					FROM ${partition}
+					WHERE doctype = $${values.length + 1} AND ${where}
+				`,
+				values.concat([doctype.name])
+			)
+
+			return Number.parseInt(res.rows[0].total)
+		})
+	}
+
 	return {
 		create,
 		createAll,
@@ -222,5 +240,6 @@ export function collection<S extends SchemaTypeDef, T>(
 		findById,
 		findOne,
 		save,
+		count,
 	}
 }

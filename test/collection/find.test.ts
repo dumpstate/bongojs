@@ -257,4 +257,20 @@ test("collection.find", async (t) => {
 			{ foo: 3, bar: 2 },
 		])
 	})
+
+	await t.test("count should count rows", async (t) => {
+		await foo
+			.createAll([
+				{ foo: 3, bar: 1 },
+				{ foo: 3, bar: 2 },
+				{ foo: 4, bar: 3 },
+				{ foo: 5, bar: 4 },
+				{ foo: 3, bar: 5 },
+			])
+			.run(cp)
+
+		const actual = await foo.count({ foo: 3 }).run(cp)
+
+		t.equal(actual, 3)
+	})
 })
