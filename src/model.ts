@@ -55,9 +55,9 @@ export type SchemaType<S> = S extends { type: NumberType }
 		: [E] extends [string]
 		? E
 		: never
-	: S extends { elements: infer E extends SchemaDefinitionValueType }
+	: S extends { elements: infer E }
 	? SchemaType<E>[]
-	: S extends { values: infer E extends SchemaDefinitionValueType }
+	: S extends { values: infer E }
 	? Record<ValidKey, SchemaType<E>>
 	: S extends { properties: infer E extends SchemaTypeDef }
 	? SchemaType<E>
@@ -75,7 +75,7 @@ export type SchemaType<S> = S extends { type: NumberType }
 				? SchemaType<S[k]> | null
 				: never
 	  }
-	: never
+	: unknown
 
 export interface DocType<T extends SchemaTypeDef> {
 	readonly name: string
