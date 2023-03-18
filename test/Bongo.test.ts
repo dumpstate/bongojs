@@ -2,6 +2,7 @@ import { Pool } from "pg"
 import { test } from "tap"
 import { Bongo } from "../src/Bongo"
 import { chain, sequence } from "../src/DBAction"
+import { nested } from "../src/model"
 
 test("Bongo", async (t) => {
 	const bongo = new Bongo()
@@ -233,5 +234,54 @@ test("create bongo with collection of discriminated union objects", async (t) =>
 
 		t.match(items[0].baz, { type: "FOO", foo: 44 })
 		t.match(items[1].baz, { type: "BAR", bar: "bar" })
+	})
+})
+
+test("create collection with nested document", async (t) => {
+	const bongo = new Bongo()
+	const Foo = {
+		name: "foo",
+		schema: {
+			foo: { type: "string" },
+		} as const,
+	}
+	const Bar = {
+		name: "bar",
+		schema: {
+			bar: { type: "string" },
+			nestedFoo: { properties: Foo.schema },
+		} as const,
+	}
+	const foo = bongo.collection(Foo)
+	const bar = bongo.collection(Bar)
+
+	t.before(async () => {
+		await bongo.migrate()
+	})
+
+	t.teardown(async () => {
+		await bongo.drop()
+		await bongo.close()
+	})
+
+	t.afterEach(async () => {
+		await foo.drop().run(bongo.cp)
+		await bar.drop().run(bongo.cp)
+	})
+
+	await t.test("create document with a nested doc", async (t) => {
+		const fooItem = await foo
+			.create({ foo: "foo-value" })
+			.transact(bongo.cp)
+		const barItem = await bar
+			.create({
+				bar: "bar-value",
+				nestedFoo: nested(fooItem),
+			})
+			.transact(bongo.cp)
+		const actual = await bar.findById(barItem.id).run(bongo.cp)
+
+		t.match(actual, barItem)
+		t.match(actual.nestedFoo$.foo, fooItem.foo$)
 	})
 })

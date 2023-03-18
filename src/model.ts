@@ -90,3 +90,8 @@ export function partitionName(doctype: DocType<any>) {
 
 	return `${DOCUMENT_TABLE}_${suffix}`
 }
+
+export function nested<T>(doc: Document<T>): Omit<Document<T>, "id"> {
+	const { id, ...rest } = doc
+	return rest
+}
