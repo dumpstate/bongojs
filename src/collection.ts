@@ -70,7 +70,9 @@ export function collection<S extends SchemaTypeDef, T>(
 		const doc = omit(obj, ["id", "doctype"])
 
 		if (!validate(doc)) {
-			throw new Error(`ValidationError: ${JSON.stringify(doc)}`)
+			throw new Error(
+				`ValidationError: ${ajv.errorsText(validate.errors)}`
+			)
 		}
 
 		return Object.seal(
@@ -154,7 +156,9 @@ export function collection<S extends SchemaTypeDef, T>(
 
 	function create(obj: T): DBAction<Document<T>> {
 		if (!validate(obj)) {
-			throw new Error("ValidationError")
+			throw new Error(
+				`ValidationError: ${ajv.errorsText(validate.errors)}`
+			)
 		}
 
 		return save(instance(nextId(doctype), obj))
@@ -191,7 +195,9 @@ export function collection<S extends SchemaTypeDef, T>(
 		const doc = omit(obj, ["id", "doctype"])
 
 		if (!validate(doc)) {
-			throw new Error("ValidationError")
+			throw new Error(
+				`ValidationError: ${ajv.errorsText(validate.errors)}`
+			)
 		}
 
 		return new DBAction(async (conn: PGPoolClient) => {
