@@ -26,29 +26,49 @@ export interface Collection<T> {
 	count: (query: Query<T>) => DBAction<number>
 }
 
-function nestedOptional<S extends SchemaTypeDef>(schema: S): S {
-	return Object.entries(schema).reduce((acc: any, [k, v]) => {
-		if ("properties" in v) {
-			acc[k] = {
-				optionalProperties: v["properties"],
-				additionalProperties: false,
-			}
-		} else {
-			acc[k] = v
-		}
+function withDocumentMeta(typedef: any) {
+	if ("optionalProperties" in typedef) {
+		typedef.optionalProperties["id"] = { type: "string" }
+	}
 
-		return acc
-	}, {})
+	return typedef
+}
+
+function JSONTypeDef<S extends SchemaTypeDef>(schema: S) {
+	const definitions: Record<string, any> = {}
+	const optionalProperties = Object.entries(schema).reduce(
+		(acc: any, [k, v]) => {
+			if ("properties" in v) {
+				acc[k] = {
+					optionalProperties: v["properties"],
+					additionalProperties: false,
+				}
+			} else if ("ref" in v) {
+				definitions[v.ref.name] = withDocumentMeta(
+					JSONTypeDef(v.ref.schema)
+				)
+				acc[k] = { ref: v.ref.name }
+			} else {
+				acc[k] = v
+			}
+
+			return acc
+		},
+		{}
+	)
+
+	return {
+		...(Object.keys(definitions).length > 0 ? { definitions } : {}),
+		optionalProperties,
+		additionalProperties: false,
+	}
 }
 
 export function collection<S extends SchemaTypeDef, T>(
 	doctype: DocType<S>
 ): Collection<T> {
 	const ajv = new Ajv()
-	const validate = ajv.compile({
-		optionalProperties: nestedOptional(doctype.schema),
-		additionalProperties: false,
-	})
+	const validate: any = ajv.compile(JSONTypeDef(doctype.schema))
 	const partition = partitionName(doctype)
 	const defaultOptionalProps = Object.keys(doctype.schema).reduce(
 		(acc: any, next) => {

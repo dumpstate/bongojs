@@ -237,7 +237,7 @@ test("create bongo with collection of discriminated union objects", async (t) =>
 	})
 })
 
-test("create collection with nested document", async (t) => {
+test("create collection with nested document as properties", async (t) => {
 	const bongo = new Bongo()
 	const Foo = {
 		name: "foo",
@@ -283,6 +283,57 @@ test("create collection with nested document", async (t) => {
 		const actual = await bar.findById(barItem.id).run(bongo.cp)
 
 		t.match(actual, barItem)
+		t.match(actual.nestedFoo$.foo, fooItem.foo$)
+	})
+})
+
+test("create collection with nested document as reference", async (t) => {
+	const bongo = new Bongo()
+	const Foo = {
+		name: "foo",
+		schema: {
+			foo: { type: "string" },
+			baz: { type: "string" },
+		} as const,
+	}
+	const Bar = {
+		name: "bar",
+		schema: {
+			bar: { type: "string" },
+			nestedFoo: { ref: Foo },
+		} as const,
+	}
+	const foo = bongo.collection(Foo)
+	const bar = bongo.collection(Bar)
+
+	t.before(async () => {
+		await bongo.migrate()
+	})
+
+	t.teardown(async () => {
+		await bongo.drop()
+		await bongo.close()
+	})
+
+	t.afterEach(async () => {
+		await foo.drop().run(bongo.cp)
+		await bar.drop().run(bongo.cp)
+	})
+
+	await t.test("create document with a nested doc", async (t) => {
+		const fooItem = await foo
+			.create({ foo: "foo-value" })
+			.transact(bongo.cp)
+		const barItem = await bar
+			.create({
+				bar: "bar-value",
+				nestedFoo: fooItem,
+			})
+			.transact(bongo.cp)
+		const actual = await bar.findById(barItem.id).run(bongo.cp)
+
+		t.match(actual, barItem)
+		t.match(actual.nestedFoo$.id, fooItem.id)
 		t.match(actual.nestedFoo$.foo, fooItem.foo$)
 	})
 })

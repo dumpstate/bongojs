@@ -36,6 +36,7 @@ export type SchemaDefinitionValueType =
 			discriminator: string
 			mapping: Record<string, SchemaDefinitionValueType>
 	  }
+	| { ref: DocType<any> }
 
 export type ValidKey = Exclude<string, "id">
 
@@ -69,6 +70,8 @@ export type SchemaType<S> = S extends { type: NumberType }
 				}
 		  }[keyof S["mapping"]]
 		: never
+	: S extends { ref: DocType<infer E extends SchemaTypeDef> }
+	? SchemaType<E> & DocumentMeta
 	: S extends SchemaTypeDef
 	? {
 			-readonly [k in keyof S]+?: k extends ValidKey
