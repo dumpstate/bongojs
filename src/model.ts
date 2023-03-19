@@ -86,6 +86,10 @@ export interface DocType<T extends SchemaTypeDef> {
 	readonly schema: T
 }
 
+export type Schema<D> = D extends DocType<infer S extends SchemaTypeDef>
+	? SchemaType<S>
+	: never
+
 export function partitionName(doctype: DocType<any>) {
 	let suffix = (doctype.prefix ? doctype.prefix : doctype.name)
 		.toLowerCase()

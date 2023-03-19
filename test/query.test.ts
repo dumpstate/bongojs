@@ -1,15 +1,18 @@
 import { test } from "tap"
-import { SchemaType } from "../src/model"
+import { Schema } from "../src/model"
 
 import { Query, SqlClause, whereClause } from "../src/query"
 
-const EntitySchema = {
-	foo: { type: "int32" },
-	bar: { type: "string" },
-	baz: { type: "boolean" },
+const Entity = {
+	name: "entity",
+	schema: {
+		foo: { type: "int32" },
+		bar: { type: "string" },
+		baz: { type: "boolean" },
+	},
 } as const
 
-type Entity = SchemaType<typeof EntitySchema>
+type Entity = Schema<typeof Entity>
 
 const testCases: [Query<Entity>, SqlClause][] = [
 	[
