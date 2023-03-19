@@ -243,6 +243,7 @@ test("create collection with nested document", async (t) => {
 		name: "foo",
 		schema: {
 			foo: { type: "string" },
+			baz: { type: "string" },
 		} as const,
 	}
 	const Bar = {

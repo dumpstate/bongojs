@@ -26,12 +26,27 @@ export interface Collection<T> {
 	count: (query: Query<T>) => DBAction<number>
 }
 
+function nestedOptional<S extends SchemaTypeDef>(schema: S): S {
+	return Object.entries(schema).reduce((acc: any, [k, v]) => {
+		if ("properties" in v) {
+			acc[k] = {
+				optionalProperties: v["properties"],
+				additionalProperties: false,
+			}
+		} else {
+			acc[k] = v
+		}
+
+		return acc
+	}, {})
+}
+
 export function collection<S extends SchemaTypeDef, T>(
 	doctype: DocType<S>
 ): Collection<T> {
 	const ajv = new Ajv()
 	const validate = ajv.compile({
-		optionalProperties: doctype.schema,
+		optionalProperties: nestedOptional(doctype.schema),
 		additionalProperties: false,
 	})
 	const partition = partitionName(doctype)
