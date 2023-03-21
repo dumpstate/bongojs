@@ -1,6 +1,6 @@
 {
 	"name": "@dumpstate/bongojs",
-	"version": "0.17.1",
+	"version": "0.18.0",
 	"description": "PostgreSQL JSON document modeling tool for node.js",
 	"main": "lib/index.js",
 	"bin": {
@@ -31,6 +31,7 @@
 		"pg": "8.x"
 	},
 	"dependencies": {
+		"@dumpstate/dbaction": "^0.2.0",
 		"ajv": "^8.12.0",
 		"commander": "^10.0.0"
 	},

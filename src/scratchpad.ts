@@ -18,13 +18,13 @@ async function main() {
 			foo: 42,
 			bar: "yeah",
 		})
-		.run(bongo.cp)
+		.run(bongo.tr)
 
 	instance.foo = 22
 
-	await foo.save(instance).run(bongo.cp)
+	await foo.save(instance).run(bongo.tr)
 
-	const another = await foo.findById(instance.id).run(bongo.cp)
+	const another = await foo.findById(instance.id).run(bongo.tr)
 
 	console.log(`Another instance: ${JSON.stringify(another)}`)
 
@@ -37,7 +37,7 @@ async function main() {
 			},
 			{ limit: 2 }
 		)
-		.run(bongo.cp)
+		.run(bongo.tr)
 
 	console.log(`All(foo = 22): ${JSON.stringify(queried)}`)
 

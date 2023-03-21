@@ -4,7 +4,7 @@ import { Bongo } from "../../src/Bongo"
 
 test("collection.find", async (t) => {
 	const bongo = new Bongo()
-	const cp = bongo.cp
+	const tr = bongo.tr
 	const foo = bongo.collection({
 		name: "doc:foo:find",
 		schema: {
@@ -18,7 +18,7 @@ test("collection.find", async (t) => {
 	})
 
 	t.afterEach(async () => {
-		await foo.drop().run(cp)
+		await foo.drop().run(tr)
 	})
 
 	t.teardown(async () => {
@@ -27,25 +27,25 @@ test("collection.find", async (t) => {
 	})
 
 	await t.test("returns one matching item", async (t) => {
-		await foo.createAll([{ foo: 10 }, { foo: 11 }, { foo: 12 }]).run(cp)
+		await foo.createAll([{ foo: 10 }, { foo: 11 }, { foo: 12 }]).run(tr)
 
-		const found = await foo.find({ foo: 11 }).run(cp)
+		const found = await foo.find({ foo: 11 }).run(tr)
 
 		t.match(found, [{ foo: 11 }])
 	})
 
 	await t.test("returns all items when empty query", async (t) => {
-		await foo.createAll([{ foo: 1 }, { foo: 2 }, { foo: 3 }]).run(cp)
+		await foo.createAll([{ foo: 1 }, { foo: 2 }, { foo: 3 }]).run(tr)
 
-		const found = await foo.find({}).run(cp)
+		const found = await foo.find({}).run(tr)
 
 		t.match(found, [{ foo: 1 }, { foo: 2 }, { foo: 3 }])
 	})
 
 	await t.test("returns empty array when no matches", async (t) => {
-		await foo.createAll([{ foo: 1 }, { foo: 2 }]).run(cp)
+		await foo.createAll([{ foo: 1 }, { foo: 2 }]).run(tr)
 
-		const found = await foo.find({ foo: 3 }).run(cp)
+		const found = await foo.find({ foo: 3 }).run(tr)
 
 		t.equal(found.length, 0)
 	})
@@ -60,9 +60,9 @@ test("collection.find", async (t) => {
 				{ foo: 1, bar: 5 },
 				{ foo: 1 },
 			])
-			.run(cp)
+			.run(tr)
 
-		const found = await foo.find({ foo: 1 }).run(cp)
+		const found = await foo.find({ foo: 1 }).run(tr)
 
 		t.match(found, [
 			{ foo: 1, bar: 1 },
@@ -73,19 +73,19 @@ test("collection.find", async (t) => {
 	})
 
 	await t.test("findOne returns null when not found", async (t) => {
-		await foo.createAll([{ foo: 1 }, { foo: 2 }]).run(cp)
+		await foo.createAll([{ foo: 1 }, { foo: 2 }]).run(tr)
 
-		const found = await foo.findOne({ foo: 10 }).run(cp)
+		const found = await foo.findOne({ foo: 10 }).run(tr)
 
 		t.equal(found, null)
 	})
 
 	await t.test("findOne throws when more than one found", async (t) => {
-		await foo.createAll([{ foo: 1 }, { foo: 2 }, { foo: 1 }]).run(cp)
+		await foo.createAll([{ foo: 1 }, { foo: 2 }, { foo: 1 }]).run(tr)
 
 		t.rejects(
 			async () => {
-				await foo.findOne({ foo: 1 }).run(cp)
+				await foo.findOne({ foo: 1 }).run(tr)
 			},
 			{},
 			"Too many items found"
@@ -93,10 +93,10 @@ test("collection.find", async (t) => {
 	})
 
 	await t.test("findById returns matching item", async (t) => {
-		await foo.createAll([{ foo: 1 }, { foo: 2 }]).run(cp)
-		const { id } = await foo.create({ foo: 3 }).run(cp)
+		await foo.createAll([{ foo: 1 }, { foo: 2 }]).run(tr)
+		const { id } = await foo.create({ foo: 3 }).run(tr)
 
-		const found = await foo.findById(id).run(cp)
+		const found = await foo.findById(id).run(tr)
 
 		t.match(found, {
 			id,
@@ -105,11 +105,11 @@ test("collection.find", async (t) => {
 	})
 
 	await t.test("findById throws when element not found", async (t) => {
-		await foo.createAll([{ foo: 1 }, { foo: 2 }]).run(cp)
+		await foo.createAll([{ foo: 1 }, { foo: 2 }]).run(tr)
 
 		t.rejects(
 			async () => {
-				await foo.findById("unknown-id").run(cp)
+				await foo.findById("unknown-id").run(tr)
 			},
 			{},
 			"Model not found: unknown-id"
@@ -125,13 +125,13 @@ test("collection.find", async (t) => {
 				{ foo: 4, bar: 3 },
 				{ foo: 5 },
 			])
-			.run(cp)
+			.run(tr)
 
 		const actual = await foo
 			.find({
 				$or: [{ foo: 1 }, { bar: 3 }],
 			})
-			.run(cp)
+			.run(tr)
 
 		t.match(actual, [{ foo: 1 }, { foo: 3, bar: 3 }, { foo: 4, bar: 3 }])
 	})
@@ -145,13 +145,13 @@ test("collection.find", async (t) => {
 				{ foo: 4, bar: 5 },
 				{ foo: 5 },
 			])
-			.run(cp)
+			.run(tr)
 
 		const actual = await foo
 			.find({
 				$and: [{ foo: { $lt: 4 } }, { bar: { $gte: 4 } }],
 			})
-			.run(cp)
+			.run(tr)
 
 		t.match(actual, [{ foo: 3, bar: 4 }])
 	})
@@ -165,29 +165,29 @@ test("collection.find", async (t) => {
 				{ foo: 3 },
 				{ foo: 4 },
 			])
-			.run(cp)
+			.run(tr)
 
 		const actual = await foo
 			.find({
 				foo: { $in: [2, 3] },
 			})
-			.run(cp)
+			.run(tr)
 
 		t.match(actual, [{ foo: 2 }, { foo: 2, bar: 4 }, { foo: 3 }])
 	})
 
 	await t.test("find with limit", async (t) => {
-		await foo.createAll([{ foo: 1 }, { foo: 2 }, { foo: 3 }]).transact(cp)
+		await foo.createAll([{ foo: 1 }, { foo: 2 }, { foo: 3 }]).transact(tr)
 
-		const actual = await foo.find({}, { limit: 2 }).run(cp)
+		const actual = await foo.find({}, { limit: 2 }).run(tr)
 
 		t.match(actual, [{ foo: 1 }, { foo: 2 }])
 	})
 
 	await t.test("find with offset and limit", async (t) => {
-		await foo.createAll([{ foo: 1 }, { foo: 2 }, { foo: 3 }]).transact(cp)
+		await foo.createAll([{ foo: 1 }, { foo: 2 }, { foo: 3 }]).transact(tr)
 
-		const actual = await foo.find({}, { limit: 3, offset: 1 }).run(cp)
+		const actual = await foo.find({}, { limit: 3, offset: 1 }).run(tr)
 
 		t.match(actual, [{ foo: 2 }, { foo: 3 }])
 	})
@@ -199,9 +199,9 @@ test("collection.find", async (t) => {
 				{ foo: 2, bar: 1 },
 				{ foo: 3, bar: 3 },
 			])
-			.transact(cp)
+			.transact(tr)
 
-		const actual = await foo.find({}, { sort: [["bar", "ASC"]] }).run(cp)
+		const actual = await foo.find({}, { sort: [["bar", "ASC"]] }).run(tr)
 
 		t.match(actual, [
 			{ foo: 2, bar: 1 },
@@ -217,9 +217,9 @@ test("collection.find", async (t) => {
 				{ foo: 1, bar: 1 },
 				{ foo: 3, bar: 3 },
 			])
-			.transact(cp)
+			.transact(tr)
 
-		const actual = await foo.find({}, { sort: [["bar", "DESC"]] }).run(cp)
+		const actual = await foo.find({}, { sort: [["bar", "DESC"]] }).run(tr)
 
 		t.match(actual, [
 			{ foo: 3, bar: 3 },
@@ -236,7 +236,7 @@ test("collection.find", async (t) => {
 				{ foo: 1, bar: 4 },
 				{ foo: 2, bar: 3 },
 			])
-			.transact(cp)
+			.transact(tr)
 
 		const actual = await foo
 			.find(
@@ -248,7 +248,7 @@ test("collection.find", async (t) => {
 					],
 				}
 			)
-			.run(cp)
+			.run(tr)
 
 		t.match(actual, [
 			{ foo: 1, bar: 4 },
@@ -267,9 +267,9 @@ test("collection.find", async (t) => {
 				{ foo: 5, bar: 4 },
 				{ foo: 3, bar: 5 },
 			])
-			.run(cp)
+			.run(tr)
 
-		const actual = await foo.count({ foo: 3 }).run(cp)
+		const actual = await foo.count({ foo: 3 }).run(tr)
 
 		t.equal(actual, 3)
 	})

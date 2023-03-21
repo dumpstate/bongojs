@@ -1,8 +1,8 @@
+import { DBAction, flatten } from "@dumpstate/dbaction/lib/PG"
 import Ajv from "ajv/dist/jtd"
 import { PoolClient as PGPoolClient } from "pg"
 
 import { DEFAULT_LIMIT } from "./constants"
-import { DBAction, flatten } from "./DBAction"
 import { nextId } from "./ids"
 import {
 	Document,

@@ -1,10 +1,10 @@
+import { Transactor } from "@dumpstate/dbaction/lib/PG"
 import { Pool as PGPool, PoolConfig as PGPoolConfig } from "pg"
 
 import { collection } from "./collection"
 import { Logger, newLogger } from "./logger"
 import { DocType, SchemaType, SchemaTypeDef } from "./model"
 import { migrateDown, migrateUp } from "./schema"
-import { ConnectionProvider } from "./ConnectionProvider"
 
 function isPGPool(obj: any): obj is PGPool {
 	return obj && obj instanceof PGPool
@@ -12,7 +12,7 @@ function isPGPool(obj: any): obj is PGPool {
 
 export class Bongo {
 	public pg: PGPool
-	public cp: ConnectionProvider
+	public tr: Transactor
 	private logger: Logger
 
 	private registry: Map<string, DocType<any>> = new Map()
@@ -41,7 +41,7 @@ export class Bongo {
 			})
 		}
 
-		this.cp = new ConnectionProvider(this.pg)
+		this.tr = new Transactor(this.pg)
 	}
 
 	public collection<S extends SchemaTypeDef>(doctype: DocType<S>) {
@@ -88,6 +88,6 @@ export class Bongo {
 	}
 
 	public async close() {
-		return this.pg.end()
+		return this.tr.close()
 	}
 }

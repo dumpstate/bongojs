@@ -1,7 +1,7 @@
+import { chain, sequence } from "@dumpstate/dbaction/lib/PG"
 import { Pool } from "pg"
 import { test } from "tap"
 import { Bongo } from "../src/Bongo"
-import { chain, sequence } from "../src/DBAction"
 import { nested } from "../src/model"
 
 test("Bongo", async (t) => {
@@ -26,7 +26,7 @@ test("Bongo", async (t) => {
 	})
 
 	t.afterEach(async () => {
-		await foo.drop().run(bongo.cp)
+		await foo.drop().run(bongo.tr)
 	})
 
 	await t.test("foo", async (t) => {
@@ -36,14 +36,14 @@ test("Bongo", async (t) => {
 				bar: "ouch",
 				baz: "FOO",
 			})
-			.run(bongo.cp)
+			.run(bongo.tr)
 
 		t.ok(bongo)
 		t.ok(newFoo.id)
 
 		newFoo.foo = 22
 
-		await foo.save(newFoo).run(bongo.cp)
+		await foo.save(newFoo).run(bongo.tr)
 
 		t.ok(newFoo.foo === 22)
 	})
@@ -60,11 +60,11 @@ test("Bongo", async (t) => {
 					bar: "baz",
 				})
 			)
-			.transact(bongo.cp)
+			.transact(bongo.tr)
 
-		t.ok((await foo.find({}).run(bongo.cp)).length === 2)
-		t.ok(await foo.findOne({ foo: 44 }).run(bongo.cp))
-		t.ok(await foo.findOne({ foo: 45 }).run(bongo.cp))
+		t.ok((await foo.find({}).run(bongo.tr)).length === 2)
+		t.ok(await foo.findOne({ foo: 44 }).run(bongo.tr))
+		t.ok(await foo.findOne({ foo: 45 }).run(bongo.tr))
 	})
 
 	await t.test("foo on rollback", async (t) => {
@@ -80,10 +80,10 @@ test("Bongo", async (t) => {
 						bar: 42,
 					} as any)
 				)
-				.transact(bongo.cp)
+				.transact(bongo.tr)
 		} catch (_) {}
 
-		t.ok((await foo.find({}).run(bongo.cp)).length == 0)
+		t.ok((await foo.find({}).run(bongo.tr)).length == 0)
 	})
 
 	await t.test("foo with run and failure", async (t) => {
@@ -99,11 +99,11 @@ test("Bongo", async (t) => {
 						bar: 42,
 					} as any)
 				)
-				.run(bongo.cp)
+				.run(bongo.tr)
 		} catch (_) {}
 
-		t.ok((await foo.find({}).run(bongo.cp)).length == 1)
-		t.ok(await foo.findOne({ foo: 44 }).run(bongo.cp))
+		t.ok((await foo.find({}).run(bongo.tr)).length == 1)
+		t.ok(await foo.findOne({ foo: 44 }).run(bongo.tr))
 	})
 
 	await t.test("foo with chain of actions", async (t) => {
@@ -118,7 +118,7 @@ test("Bongo", async (t) => {
 				return foo.create({ foo: 53, bar: `${item.foo}foo` })
 			},
 			() => foo.find({})
-		).transact(bongo.cp)
+		).transact(bongo.tr)
 
 		t.ok(items.length === 2)
 	})
@@ -132,13 +132,13 @@ test("Bongo", async (t) => {
 				{ foo: 55 },
 				{ foo: 56 },
 			])
-			.transact(bongo.cp)
+			.transact(bongo.tr)
 
 		const items = await sequence(
 			foo.find({ foo: 53 }),
 			foo.find({ foo: 55 }),
 			foo.find({ foo: 52 })
-		).run(bongo.cp)
+		).run(bongo.tr)
 
 		t.ok(items.length === 3)
 		t.match(items[0], [{ foo: 53 }])
@@ -154,7 +154,7 @@ test("Bongo", async (t) => {
 					foo: 42,
 					bar: "foo",
 				})
-				.transact(bongo.cp)
+				.transact(bongo.tr)
 
 			t.equal(item.foo$, item.foo)
 			t.equal(item.bar$, item.bar)
@@ -211,7 +211,7 @@ test("create bongo with collection of discriminated union objects", async (t) =>
 	})
 
 	t.afterEach(async () => {
-		await baz.drop().run(bongo.cp)
+		await baz.drop().run(bongo.tr)
 	})
 
 	await t.test("baz", async (t) => {
@@ -230,7 +230,7 @@ test("create bongo with collection of discriminated union objects", async (t) =>
 					},
 				},
 			])
-			.transact(bongo.cp)
+			.transact(bongo.tr)
 
 		t.match(items[0].baz, { type: "FOO", foo: 44 })
 		t.match(items[1].baz, { type: "BAR", bar: "bar" })
@@ -266,21 +266,21 @@ test("create collection with nested document as properties", async (t) => {
 	})
 
 	t.afterEach(async () => {
-		await foo.drop().run(bongo.cp)
-		await bar.drop().run(bongo.cp)
+		await foo.drop().run(bongo.tr)
+		await bar.drop().run(bongo.tr)
 	})
 
 	await t.test("create document with a nested doc", async (t) => {
 		const fooItem = await foo
 			.create({ foo: "foo-value" })
-			.transact(bongo.cp)
+			.transact(bongo.tr)
 		const barItem = await bar
 			.create({
 				bar: "bar-value",
 				nestedFoo: nested(fooItem),
 			})
-			.transact(bongo.cp)
-		const actual = await bar.findById(barItem.id).run(bongo.cp)
+			.transact(bongo.tr)
+		const actual = await bar.findById(barItem.id).run(bongo.tr)
 
 		t.match(actual, barItem)
 		t.match(actual.nestedFoo$.foo, fooItem.foo$)
@@ -316,21 +316,21 @@ test("create collection with nested document as reference", async (t) => {
 	})
 
 	t.afterEach(async () => {
-		await foo.drop().run(bongo.cp)
-		await bar.drop().run(bongo.cp)
+		await foo.drop().run(bongo.tr)
+		await bar.drop().run(bongo.tr)
 	})
 
 	await t.test("create document with a nested doc", async (t) => {
 		const fooItem = await foo
 			.create({ foo: "foo-value" })
-			.transact(bongo.cp)
+			.transact(bongo.tr)
 		const barItem = await bar
 			.create({
 				bar: "bar-value",
 				nestedFoo: fooItem,
 			})
-			.transact(bongo.cp)
-		const actual = await bar.findById(barItem.id).run(bongo.cp)
+			.transact(bongo.tr)
+		const actual = await bar.findById(barItem.id).run(bongo.tr)
 
 		t.match(actual, barItem)
 		t.match(actual.nestedFoo$.id, fooItem.id)

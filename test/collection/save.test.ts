@@ -3,7 +3,7 @@ import { Bongo } from "../../src/Bongo"
 
 test("collection.save", async (t) => {
 	const bongo = new Bongo()
-	const { cp } = bongo
+	const { tr } = bongo
 	const foo = bongo.collection({
 		name: "doc:foo:save",
 		schema: {
@@ -19,7 +19,7 @@ test("collection.save", async (t) => {
 	})
 
 	t.afterEach(async () => {
-		await foo.drop().run(cp)
+		await foo.drop().run(tr)
 	})
 
 	t.teardown(async () => {
@@ -33,12 +33,12 @@ test("collection.save", async (t) => {
 				foo: 42,
 				bar: 42,
 			})
-			.transact(cp)
+			.transact(tr)
 
 		obj.bar = 44
-		await foo.save(obj).transact(cp)
+		await foo.save(obj).transact(tr)
 
-		const actual = await foo.findOne({ foo: 42 }).run(cp)
+		const actual = await foo.findOne({ foo: 42 }).run(tr)
 
 		t.match(actual, { foo: 42, bar: 44 })
 	})
@@ -48,12 +48,12 @@ test("collection.save", async (t) => {
 			.create({
 				foo: 42,
 			})
-			.transact(cp)
+			.transact(tr)
 
 		obj.bar = 44
-		await foo.save(obj).transact(cp)
+		await foo.save(obj).transact(tr)
 
-		const actual = await foo.findOne({ foo: 42 }).run(cp)
+		const actual = await foo.findOne({ foo: 42 }).run(tr)
 
 		t.match(actual, { foo: 42, bar: 44 })
 	})
