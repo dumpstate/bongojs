@@ -17,7 +17,12 @@ jobs:
             - name: Start Docker Compose
               run: docker-compose up -d
             - name: Install Dependencies
-              run: npm install
+              run: |
+                  npm config set '@dumpstate:registry' 'https://npm.pkg.github.com'
+                  npm config set '//npm.pkg.github.com/:_authToken' "${TOKEN}"
+                  npm install
+              env:
+                  TOKEN: ${{ secrets.GITHUB_TOKEN }}
             - name: Build
               run: npm run build && npm link
             - name: Apply DB Migrations
