@@ -81,6 +81,7 @@ export type QueryOpts<T> = {
 	offset?: number
 	limit?: number
 	sort?: [keyof T, SortDirection][]
+	forUpdate?: boolean
 }
 
 function ipltJSONPath(value: string | number | boolean | null): string {

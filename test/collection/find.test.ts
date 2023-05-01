@@ -1,3 +1,4 @@
+import { pure } from "@dumpstate/dbaction"
 import { test } from "tap"
 
 import { Bongo } from "../../src/Bongo"
@@ -272,5 +273,38 @@ test("collection.find", async (t) => {
 		const actual = await foo.count({ foo: 3 }).run(tr)
 
 		t.equal(actual, 3)
+	})
+
+	await t.test("should lock rows when requested", async (t) => {
+		await foo
+			.createAll([
+				{ foo: 3, bar: 1 },
+				{ foo: 3, bar: 2 },
+				{ foo: 4, bar: 3 },
+				{ foo: 5, bar: 4 },
+			])
+			.run(tr)
+
+		await foo
+			.find({}, { limit: 2, forUpdate: true })
+			.flatMap((actualFirst) => {
+				t.match(actualFirst, [
+					{ foo: 3, bar: 1 },
+					{ foo: 3, bar: 2 },
+				])
+
+				return pure(
+					foo
+						.find({}, { limit: 2, forUpdate: true })
+						.map((actualSecond) => {
+							t.match(actualSecond, [
+								{ foo: 4, bar: 3 },
+								{ foo: 5, bar: 4 },
+							])
+						})
+						.transact(tr)
+				)
+			})
+			.transact(tr)
 	})
 })

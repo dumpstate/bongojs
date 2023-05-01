@@ -140,6 +140,7 @@ export function collection<S extends SchemaTypeDef, T>(
 					${orderBy.length ? "ORDER BY " + orderBy : ""}
 					LIMIT $${values.length + 2}
 					OFFSET $${values.length + 3}
+					${opts?.forUpdate ? "FOR UPDATE SKIP LOCKED" : ""}
 				`,
 				values.concat([doctype.name, limit, offset])
 			)
