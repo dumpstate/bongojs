@@ -227,6 +227,10 @@ function plainValue(value: any): [string | number | boolean | null, boolean] {
 				return [value, true]
 			}
 
+			if (value instanceof Date) {
+				return [value.toISOString(), true]
+			}
+
 			return [value, false]
 	}
 }

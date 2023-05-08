@@ -308,3 +308,130 @@ test("collection.find", async (t) => {
 			.transact(tr)
 	})
 })
+
+test("collection.find by timestamp", async (t) => {
+	const bongo = new Bongo()
+	const foo = bongo.collection({
+		name: "doc:foo:find:timestamp",
+		schema: {
+			createdAt: { type: "timestamp" },
+			value: { type: "int32" },
+		} as const,
+	})
+
+	t.before(async () => {
+		await bongo.migrate()
+	})
+	t.afterEach(async () => {
+		await foo.drop().run(bongo.tr)
+	})
+	t.teardown(async () => {
+		await bongo.drop()
+		await bongo.close()
+	})
+
+	await t.test("creates with timestamps", async (t) => {
+		const date = new Date()
+		const dateStr = date.toISOString()
+
+		await foo
+			.createAll([
+				{ createdAt: date, value: 1 },
+				{ createdAt: dateStr, value: 2 },
+			])
+			.transact(bongo.tr)
+
+		const found = await foo.find({}).run(bongo.tr)
+		t.match(found, [
+			{ createdAt: dateStr, value: 1 },
+			{ createdAt: dateStr, value: 2 },
+		])
+	})
+
+	await t.test("finds with exact match on ISO string", async (t) => {
+		const date = new Date()
+
+		await foo
+			.createAll([
+				{ createdAt: date, value: 1 },
+				{ createdAt: new Date(date.getTime() + 10000), value: 2 },
+			])
+			.transact(bongo.tr)
+
+		const found = await foo
+			.find({ createdAt: date.toISOString() })
+			.run(bongo.tr)
+		t.match(found, [{ createdAt: date.toISOString(), value: 1 }])
+	})
+
+	await t.test("finds with exact match on Date object", async (t) => {
+		const date = new Date()
+
+		await foo
+			.createAll([
+				{ createdAt: date, value: 1 },
+				{ createdAt: new Date(date.getTime() + 10000), value: 2 },
+			])
+			.transact(bongo.tr)
+
+		const found = await foo.find({ createdAt: date }).run(bongo.tr)
+		t.match(found, [{ createdAt: date.toISOString(), value: 1 }])
+	})
+
+	await t.test("finds with lt/gt comparison", async (t) => {
+		const date = new Date()
+		const ts1 = new Date(date.getTime() - 10000)
+		const ts2 = date
+		const ts3 = new Date(date.getTime() + 10000)
+
+		await foo
+			.createAll([
+				{ createdAt: ts1, value: 1 },
+				{ createdAt: ts2, value: 2 },
+				{ createdAt: ts3, value: 3 },
+			])
+			.transact(bongo.tr)
+
+		const cases = [
+			{
+				query: { createdAt: { $lt: date } },
+				expected: [{ createdAt: ts1.toISOString(), value: 1 }],
+			},
+			{
+				query: { createdAt: { $lte: date } },
+				expected: [
+					{ createdAt: ts1.toISOString(), value: 1 },
+					{ createdAt: ts2.toISOString(), value: 2 },
+				],
+			},
+			{
+				query: { createdAt: { $gt: date } },
+				expected: [{ createdAt: ts3.toISOString(), value: 3 }],
+			},
+			{
+				query: { createdAt: { $gte: date } },
+				expected: [
+					{ createdAt: ts2.toISOString(), value: 2 },
+					{ createdAt: ts3.toISOString(), value: 3 },
+				],
+			},
+			{
+				query: {
+					$or: [
+						{ createdAt: { $lt: date } },
+						{ createdAt: { $gt: date } },
+					],
+				},
+				expected: [
+					{ createdAt: ts1.toISOString(), value: 1 },
+					{ createdAt: ts3.toISOString(), value: 3 },
+				],
+			},
+		]
+
+		for (const { query, expected } of cases) {
+			const found = await foo.find(query).run(bongo.tr)
+			t.match(found, expected)
+		}
+	})
+})
