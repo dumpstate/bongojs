@@ -178,7 +178,7 @@ export async function migrateDown(logger: Logger, pg: PGPool): Promise<void> {
 	}
 }
 
-async function ensurePartition(
+export async function ensurePartition(
 	logger: Logger,
 	conn: PGPoolClient,
 	doctype: DocType<any>

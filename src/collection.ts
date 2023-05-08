@@ -12,7 +12,9 @@ import {
 	SchemaTypeDef,
 } from "./model"
 import { Query, QueryOpts, whereClause, orderByClause } from "./query"
+import { ensurePartition as ensurePartitionMigration } from "./schema"
 import { omit } from "./utils"
+import { Logger } from "./logger"
 
 export interface Collection<T> {
 	create: (obj: T) => DBAction<Document<T>>
@@ -24,6 +26,7 @@ export interface Collection<T> {
 	findOne: (query: Query<T>) => DBAction<Document<T> | null>
 	save: (obj: T & DocumentMeta) => DBAction<Document<T>>
 	count: (query: Query<T>) => DBAction<number>
+	ensurePartition: () => DBAction<void>
 }
 
 function withDocumentMeta(typedef: any) {
@@ -65,7 +68,8 @@ function JSONTypeDef<S extends SchemaTypeDef>(schema: S) {
 }
 
 export function collection<S extends SchemaTypeDef, T>(
-	doctype: DocType<S>
+	doctype: DocType<S>,
+	logger: Logger
 ): Collection<T> {
 	const ajv = new Ajv()
 	const validate: any = ajv.compile(JSONTypeDef(doctype.schema))
@@ -273,6 +277,12 @@ export function collection<S extends SchemaTypeDef, T>(
 		})
 	}
 
+	function ensurePartition() {
+		return new DBAction(async (conn: PGPoolClient) => {
+			await ensurePartitionMigration(logger, conn, doctype)
+		})
+	}
+
 	return {
 		create,
 		createAll,
@@ -283,5 +293,6 @@ export function collection<S extends SchemaTypeDef, T>(
 		findOne,
 		save,
 		count,
+		ensurePartition,
 	}
 }

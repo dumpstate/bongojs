@@ -68,7 +68,7 @@ export class Bongo {
 		const { schema } = doctype
 		type DataType = SchemaType<typeof schema>
 
-		return collection<S, DataType>(doctype)
+		return collection<S, DataType>(doctype, this.logger)
 	}
 
 	public async migrate() {
