@@ -160,6 +160,34 @@ test("Bongo", async (t) => {
 			t.equal(item.bar$, item.bar)
 		}
 	)
+
+	await t.test("return collection if already exists", async (t) => {
+		const foo2 = bongo.collection({
+			name: "foo",
+			prefix: "foo",
+			schema: {
+				foo: { type: "int32" },
+				bar: { type: "string" },
+				baz: { enum: ["FOO", "BAR"] },
+			} as const,
+		})
+
+		t.equal(foo2, foo)
+	})
+
+	await t.test("raise if different schema under same name", async (t) => {
+		t.throws(
+			() =>
+				bongo.collection({
+					name: "foo",
+					prefix: "foo",
+					schema: {
+						foo: { type: "int32" },
+					} as const,
+				}),
+			new Error("Doctype foo already registered with different schema")
+		)
+	})
 })
 
 test("create bongo for an existing Pool", async (t) => {

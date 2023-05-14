@@ -1,10 +1,11 @@
 import { Transactor } from "@dumpstate/dbaction/lib/PG"
 import { Pool as PGPool, PoolConfig as PGPoolConfig } from "pg"
 
-import { collection } from "./collection"
+import { Collection, collection } from "./collection"
 import { Logger, newLogger } from "./logger"
 import { DocType, SchemaType, SchemaTypeDef } from "./model"
 import { migrateDown, migrateUp } from "./schema"
+import { deepEquals } from "./utils"
 
 function isPGPool(obj: any): obj is PGPool {
 	return obj && obj instanceof PGPool
@@ -15,7 +16,7 @@ export class Bongo {
 	public tr: Transactor
 	private logger: Logger
 
-	private registry: Map<string, DocType<any>> = new Map()
+	private registry: Map<string, Collection<any, any>> = new Map()
 	private idPrefixes: Set<string> = new Set()
 
 	constructor(pgPoolOrConfig?: PGPool | PGPoolConfig, logger?: Logger) {
@@ -44,9 +45,22 @@ export class Bongo {
 		this.tr = new Transactor(this.pg)
 	}
 
-	public collection<S extends SchemaTypeDef>(doctype: DocType<S>) {
+	public collection<S extends SchemaTypeDef>(
+		doctype: DocType<S>
+	): Collection<S, SchemaType<S>> {
 		if (this.registry.has(doctype.name)) {
-			throw new Error(`DocType ${doctype.name} already registered`)
+			const col = this.registry.get(doctype.name) as Collection<
+				S,
+				SchemaType<S>
+			>
+
+			if (!deepEquals(doctype.schema, col.doctype.schema)) {
+				throw new Error(
+					`Doctype ${doctype.name} already registered with different schema`
+				)
+			}
+
+			return col
 		}
 
 		if (doctype.prefix) {
@@ -63,12 +77,12 @@ export class Bongo {
 			this.idPrefixes.add(doctype.prefix)
 		}
 
-		this.registry.set(doctype.name, doctype)
-
 		const { schema } = doctype
 		type DataType = SchemaType<typeof schema>
 
-		return collection<S, DataType>(doctype, this.logger)
+		const col = collection<S, DataType>(doctype, this.logger)
+		this.registry.set(doctype.name, col)
+		return col
 	}
 
 	public async migrate() {
@@ -79,7 +93,7 @@ export class Bongo {
 		await migrateUp(
 			this.logger,
 			this.pg,
-			Array.from(this.registry.values())
+			Array.from(this.registry.values()).map((col) => col.doctype)
 		)
 	}
 
