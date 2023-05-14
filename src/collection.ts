@@ -16,8 +16,7 @@ import { ensurePartition as ensurePartitionMigration } from "./schema"
 import { omit } from "./utils"
 import { Logger } from "./logger"
 
-export interface Collection<S extends SchemaTypeDef, T> {
-	doctype: DocType<S>
+export interface Collection<T> {
 	create: (obj: T) => DBAction<Document<T>>
 	createAll: (objs: T[]) => DBAction<Document<T>[]>
 	deleteById: (id: string) => DBAction<boolean>
@@ -71,7 +70,7 @@ function JSONTypeDef<S extends SchemaTypeDef>(schema: S) {
 export function collection<S extends SchemaTypeDef, T>(
 	doctype: DocType<S>,
 	logger: Logger
-): Collection<S, T> {
+): Collection<T> {
 	const ajv = new Ajv()
 	const validate: any = ajv.compile(JSONTypeDef(doctype.schema))
 	const partition = partitionName(doctype)
@@ -285,7 +284,6 @@ export function collection<S extends SchemaTypeDef, T>(
 	}
 
 	return {
-		doctype,
 		create,
 		createAll,
 		deleteById,

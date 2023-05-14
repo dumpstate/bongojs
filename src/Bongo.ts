@@ -16,7 +16,8 @@ export class Bongo {
 	public tr: Transactor
 	private logger: Logger
 
-	private registry: Map<string, Collection<any, any>> = new Map()
+	private collectionRegistry: Map<string, Collection<any>> = new Map()
+	private doctypeRegistry: Map<string, DocType<any>> = new Map()
 	private idPrefixes: Set<string> = new Set()
 
 	constructor(pgPoolOrConfig?: PGPool | PGPoolConfig, logger?: Logger) {
@@ -47,14 +48,18 @@ export class Bongo {
 
 	public collection<S extends SchemaTypeDef>(
 		doctype: DocType<S>
-	): Collection<S, SchemaType<S>> {
-		if (this.registry.has(doctype.name)) {
-			const col = this.registry.get(doctype.name) as Collection<
-				S,
+	): Collection<SchemaType<S>> {
+		if (this.collectionRegistry.has(doctype.name)) {
+			const col = this.collectionRegistry.get(doctype.name) as Collection<
 				SchemaType<S>
 			>
 
-			if (!deepEquals(doctype.schema, col.doctype.schema)) {
+			if (
+				!deepEquals(
+					doctype.schema,
+					this.doctypeRegistry.get(doctype.name)?.schema
+				)
+			) {
 				throw new Error(
 					`Doctype ${doctype.name} already registered with different schema`
 				)
@@ -81,19 +86,20 @@ export class Bongo {
 		type DataType = SchemaType<typeof schema>
 
 		const col = collection<S, DataType>(doctype, this.logger)
-		this.registry.set(doctype.name, col)
+		this.collectionRegistry.set(doctype.name, col)
+		this.doctypeRegistry.set(doctype.name, doctype)
 		return col
 	}
 
 	public async migrate() {
-		if (this.registry.size === 0) {
+		if (this.doctypeRegistry.size === 0) {
 			this.logger.warn("No doctypes registered when migrating")
 		}
 
 		await migrateUp(
 			this.logger,
 			this.pg,
-			Array.from(this.registry.values()).map((col) => col.doctype)
+			Array.from(this.doctypeRegistry.values())
 		)
 	}
 
