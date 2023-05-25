@@ -1,6 +1,6 @@
 {
 	"name": "@dumpstate/bongojs",
-	"version": "0.23.0",
+	"version": "0.23.1",
 	"description": "PostgreSQL JSON document modeling tool for node.js",
 	"main": "lib/index.js",
 	"bin": {
@@ -19,26 +19,26 @@
 	"author": "Albert Sadowski <asadowski@mailbox.org>",
 	"license": "MIT",
 	"devDependencies": {
-		"@types/pg": "^8.6.6",
+		"@types/pg": "^8.10.1",
 		"@types/tap": "^15.0.8",
 		"husky": "^8.0.3",
-		"nanoid": "^3.3.4",
-		"pg": "^8.10.0",
-		"prettier": "2.8.4",
+		"nanoid": "^3.3.6",
+		"pg": "^8.11.0",
+		"prettier": "2.8.8",
 		"tap": "^16.3.4",
-		"typescript": "^4.8.4"
+		"typescript": "^5.0.4"
 	},
 	"peerDependencies": {
 		"pg": "8.x"
 	},
 	"dependencies": {
-		"@dumpstate/dbaction": "^0.2.0",
+		"@dumpstate/dbaction": "^0.2.1",
 		"ajv": "^8.12.0",
-		"commander": "^10.0.0"
+		"commander": "^10.0.1"
 	},
 	"optionalDependencies": {
-		"nanoid": "^3.3.4",
-		"pino": "^8.11.0"
+		"nanoid": "^3.3.6",
+		"pino": "^8.14.1"
 	},
 	"tap": {
 		"check-coverage": false
