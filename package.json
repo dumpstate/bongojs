@@ -10,7 +10,6 @@
 		"build": "tsc --project tsconfig.json",
 		"build:test": "tsc --project test.tsconfig.json",
 		"lint": "npm run style:check",
-		"prepare": "husky install",
 		"prepublish": "npm run build",
 		"style:check": "prettier --check .",
 		"style:fix": "prettier --write .",
@@ -21,7 +20,6 @@
 	"devDependencies": {
 		"@types/pg": "^8.10.1",
 		"@types/tap": "^15.0.8",
-		"husky": "^8.0.3",
 		"nanoid": "^3.3.6",
 		"pg": "^8.11.0",
 		"prettier": "2.8.8",
