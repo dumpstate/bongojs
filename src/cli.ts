@@ -2,11 +2,9 @@
 
 import { join } from "path"
 
-import { Argument, Command } from "commander"
+import minimist from "minimist"
 
 import { Bongo } from "./Bongo"
-
-const program = new Command()
 
 function loadBongo(path?: string): Bongo {
 	if (path) {
@@ -25,42 +23,69 @@ function loadBongo(path?: string): Bongo {
 	return new Bongo()
 }
 
-program
-	.command("migrate")
-	.addArgument(new Argument("<direction>").choices(["up", "down"]))
-	.addArgument(new Argument("<path>").argOptional())
-	.description("applies database migrations")
-	.action(async (direction: string, path?: string) => {
-		const bongo = loadBongo(path)
+async function migrateUp(path?: string) {
+	console.log("Migrating UP")
 
-		switch (direction) {
-			case "up":
-				console.log("Migrating UP")
+	const bongo = loadBongo(path)
 
-				try {
-					await bongo.migrate()
+	try {
+		await bongo.migrate()
 
-					console.log("Done. Closing DB connection.")
-					await bongo.close()
-				} catch (err) {
-					console.error(err)
-					process.exit(1)
-				}
+		console.log("Done. Closing DB connection.")
+		await bongo.close()
+	} catch (err) {
+		console.error(err)
+		process.exit(1)
+	}
 
-				process.exit(0)
-			case "down":
-				try {
-					await bongo.drop()
-					await bongo.close()
-				} catch (err) {
-					console.error(err)
-					process.exit(1)
-				}
+	process.exit(0)
+}
 
-				process.exit(0)
-			default:
-				throw Error(`Unknown direction: ${direction}`)
-		}
-	})
+async function migrateDown(path?: string) {
+	console.log("Migrating DOWN")
 
-program.parse(process.argv)
+	const bongo = loadBongo(path)
+
+	try {
+		await bongo.drop()
+		await bongo.close()
+	} catch (err) {
+		console.error(err)
+		process.exit(1)
+	}
+
+	process.exit(0)
+}
+
+function usage() {
+	console.log("node ./lib/cli.js migrate <DIR> [<PATH>]")
+	console.log("\t<DIR> - either 'up' or 'down'")
+	console.log("\t<PATH> - optional path to script exporting bongo instance")
+}
+
+async function main() {
+	const argv = minimist(process.argv.slice(2))
+
+	if (argv._.length < 2 || argv._[0] !== "migrate") {
+		usage()
+		process.exit(1)
+	}
+
+	const path = argv._.length > 2 ? argv._[2] : undefined
+
+	switch (argv._[1]) {
+		case "up":
+			await migrateUp(path)
+			break
+		case "down":
+			await migrateDown(path)
+			break
+		default:
+			usage()
+			process.exit(1)
+	}
+
+	process.exit(0)
+}
+
+main()
