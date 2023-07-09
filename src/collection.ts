@@ -48,7 +48,7 @@ function JSONTypeDef<S extends SchemaTypeDef>(schema: S) {
 				}
 			} else if ("ref" in v) {
 				definitions[v.ref.name] = withDocumentMeta(
-					JSONTypeDef(v.ref.schema)
+					JSONTypeDef(v.ref.schema),
 				)
 				acc[k] = { ref: v.ref.name }
 			} else {
@@ -57,7 +57,7 @@ function JSONTypeDef<S extends SchemaTypeDef>(schema: S) {
 
 			return acc
 		},
-		{}
+		{},
 	)
 
 	return {
@@ -69,7 +69,7 @@ function JSONTypeDef<S extends SchemaTypeDef>(schema: S) {
 
 export function collection<S extends SchemaTypeDef, T>(
 	doctype: DocType<S>,
-	logger: Logger
+	logger: Logger,
 ): Collection<T> {
 	const ajv = new Ajv()
 	const validate: any = ajv.compile(JSONTypeDef(doctype.schema))
@@ -79,7 +79,7 @@ export function collection<S extends SchemaTypeDef, T>(
 			acc[next] = undefined
 			return acc
 		},
-		{}
+		{},
 	)
 	const unsafeGetters = Object.keys(doctype.schema).reduce(
 		(acc: any, next) => {
@@ -89,7 +89,7 @@ export function collection<S extends SchemaTypeDef, T>(
 
 					if (val === undefined || val === null) {
 						throw Error(
-							`expected '${next}' to be deinfed and not null`
+							`expected '${next}' to be deinfed and not null`,
 						)
 					}
 
@@ -98,7 +98,7 @@ export function collection<S extends SchemaTypeDef, T>(
 			}
 			return acc
 		},
-		{}
+		{},
 	)
 
 	function withUnsafeGetters(obj: T & DocumentMeta): Document<T> {
@@ -110,7 +110,7 @@ export function collection<S extends SchemaTypeDef, T>(
 
 		if (!validate(doc)) {
 			throw new Error(
-				`ValidationError: ${ajv.errorsText(validate.errors)}`
+				`ValidationError: ${ajv.errorsText(validate.errors)}`,
 			)
 		}
 
@@ -119,19 +119,19 @@ export function collection<S extends SchemaTypeDef, T>(
 				...defaultOptionalProps,
 				...(doc as any),
 				id,
-			})
+			}),
 		)
 	}
 
 	function find(
 		query: Query<T>,
-		opts?: QueryOpts<T>
+		opts?: QueryOpts<T>,
 	): DBAction<Document<T>[]> {
 		const offset = opts?.offset || 0
 		const limit = opts?.limit || DEFAULT_LIMIT
 		const { text: where, values: whereValues } = whereClause<T>(query)
 		const { text: orderBy, values: orderByValues } = orderByClause<T>(
-			opts?.sort || []
+			opts?.sort || [],
 		)
 		const values = whereValues.concat(orderByValues)
 
@@ -146,7 +146,7 @@ export function collection<S extends SchemaTypeDef, T>(
 					OFFSET $${values.length + 3}
 					${opts?.forUpdate ? "FOR UPDATE SKIP LOCKED" : ""}
 				`,
-				values.concat([doctype.name, limit, offset])
+				values.concat([doctype.name, limit, offset]),
 			)
 
 			return res.rows.map((row) => instance(row.id, row.doc))
@@ -177,7 +177,7 @@ export function collection<S extends SchemaTypeDef, T>(
 						id = $1 AND
 						doctype = $2
 				`,
-				[id, doctype.name]
+				[id, doctype.name],
 			)
 
 			if (res.rowCount > 1) {
@@ -197,7 +197,7 @@ export function collection<S extends SchemaTypeDef, T>(
 	function create(obj: T): DBAction<Document<T>> {
 		if (!validate(obj)) {
 			throw new Error(
-				`ValidationError: ${ajv.errorsText(validate.errors)}`
+				`ValidationError: ${ajv.errorsText(validate.errors)}`,
 			)
 		}
 
@@ -216,7 +216,7 @@ export function collection<S extends SchemaTypeDef, T>(
 					WHERE id = $1 AND
 					      doctype = $2
 				`,
-				[id, doctype.name]
+				[id, doctype.name],
 			)
 
 			return res.rowCount === 1
@@ -236,7 +236,7 @@ export function collection<S extends SchemaTypeDef, T>(
 
 		if (!validate(doc)) {
 			throw new Error(
-				`ValidationError: ${ajv.errorsText(validate.errors)}`
+				`ValidationError: ${ajv.errorsText(validate.errors)}`,
 			)
 		}
 
@@ -249,7 +249,7 @@ export function collection<S extends SchemaTypeDef, T>(
 					DO
 						UPDATE SET doc = $3
 				`,
-				[obj.id, doctype.name, doc]
+				[obj.id, doctype.name, doc],
 			)
 
 			if (res.rowCount !== 1) {
@@ -270,7 +270,7 @@ export function collection<S extends SchemaTypeDef, T>(
 					FROM ${partition}
 					WHERE doctype = $${values.length + 1} AND ${where}
 				`,
-				values.concat([doctype.name])
+				values.concat([doctype.name]),
 			)
 
 			return Number.parseInt(res.rows[0].total)

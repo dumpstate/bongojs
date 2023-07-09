@@ -115,7 +115,7 @@ function reduce(clauses: SqlClause[], op: LogicalOp): SqlClause {
 					: clause.text,
 			values: acc.values.concat(clause.values),
 		}),
-		{ text: "", values: [] }
+		{ text: "", values: [] },
 	)
 
 	return {
@@ -132,7 +132,7 @@ class ValueMatch extends Match {
 	constructor(
 		public readonly operator: ValueMatchOperator,
 		public readonly key: string,
-		public readonly value: string | number | boolean | null
+		public readonly value: string | number | boolean | null,
 	) {
 		super()
 	}
@@ -154,7 +154,7 @@ class ArrayMatch extends Match {
 	constructor(
 		public readonly operator: ArrayMatchOperator,
 		public readonly key: string,
-		public readonly values: (string | number | boolean | null)[]
+		public readonly values: (string | number | boolean | null)[],
 	) {
 		super()
 	}
@@ -181,7 +181,7 @@ class ArrayMatch extends Match {
 class MultiMatch extends Match {
 	constructor(
 		public readonly matches: Match[],
-		public readonly operator: LogicalOp
+		public readonly operator: LogicalOp,
 	) {
 		super()
 	}
@@ -308,7 +308,7 @@ function match(key: string, value: any): Match {
 				} else {
 					return new MultiMatch(
 						entries.map(([eKey, eValue]) => match(eKey, eValue)),
-						"AND"
+						"AND",
 					)
 				}
 			})
@@ -321,7 +321,7 @@ function match(key: string, value: any): Match {
 
 export function whereClause<T>(
 	query: Query<T>,
-	targetColumn: string = "doc"
+	targetColumn: string = "doc",
 ): SqlClause {
 	const clauses: SqlClause[] = []
 	let ix = 1
@@ -344,13 +344,13 @@ export function whereClause<T>(
 
 export function orderByClause<T>(
 	sort: [keyof T, SortDirection][],
-	targetColumn: string = "doc"
+	targetColumn: string = "doc",
 ): SqlClause {
 	return {
 		text: sort
 			.map(
 				([key, direction]) =>
-					`${targetColumn}->'${String(key)}' ${direction}`
+					`${targetColumn}->'${String(key)}' ${direction}`,
 			)
 			.join(", "),
 		values: [],

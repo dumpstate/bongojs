@@ -58,7 +58,7 @@ test("Bongo", async (t) => {
 				foo.create({
 					foo: 45,
 					bar: "baz",
-				})
+				}),
 			)
 			.transact(bongo.tr)
 
@@ -78,7 +78,7 @@ test("Bongo", async (t) => {
 					foo.create({
 						foo: "a string",
 						bar: 42,
-					} as any)
+					} as any),
 				)
 				.transact(bongo.tr)
 		} catch (_) {}
@@ -97,7 +97,7 @@ test("Bongo", async (t) => {
 					foo.create({
 						foo: "a string",
 						bar: 42,
-					} as any)
+					} as any),
 				)
 				.run(bongo.tr)
 		} catch (_) {}
@@ -117,7 +117,7 @@ test("Bongo", async (t) => {
 
 				return foo.create({ foo: 53, bar: `${item.foo}foo` })
 			},
-			() => foo.find({})
+			() => foo.find({}),
 		).transact(bongo.tr)
 
 		t.ok(items.length === 2)
@@ -137,7 +137,7 @@ test("Bongo", async (t) => {
 		const items = await sequence(
 			foo.find({ foo: 53 }),
 			foo.find({ foo: 55 }),
-			foo.find({ foo: 52 })
+			foo.find({ foo: 52 }),
 		).run(bongo.tr)
 
 		t.ok(items.length === 3)
@@ -158,7 +158,7 @@ test("Bongo", async (t) => {
 
 			t.equal(item.foo$, item.foo)
 			t.equal(item.bar$, item.bar)
-		}
+		},
 	)
 
 	await t.test("return collection if already exists", async (t) => {
@@ -185,7 +185,7 @@ test("Bongo", async (t) => {
 						foo: { type: "int32" },
 					} as const,
 				}),
-			new Error("Doctype foo already registered with different schema")
+			new Error("Doctype foo already registered with different schema"),
 		)
 	})
 })

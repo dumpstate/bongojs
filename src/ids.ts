@@ -32,7 +32,7 @@ export function nextId<T extends SchemaTypeDef>(doctype: DocType<T>): string {
 
 	if (doctype.prefix) {
 		return `${doctype.prefix}_${idGenerator(
-			ID_LENGTH - doctype.prefix.length - 1
+			ID_LENGTH - doctype.prefix.length - 1,
 		)}`
 	}
 

@@ -42,7 +42,7 @@ USING GIN (doc)`.trim(),
 
 async function checkTableExists(
 	pg: PGPoolClient,
-	tablename: string
+	tablename: string,
 ): Promise<boolean> {
 	const res = await pg.query(
 		`
@@ -52,7 +52,7 @@ async function checkTableExists(
                             table_name = $1
             )
         `.trim(),
-		[tablename]
+		[tablename],
 	)
 
 	return res.rows[0]["exists"]
@@ -75,7 +75,7 @@ async function currentRevision(pg: PGPoolClient): Promise<number | null> {
 
 async function setCurrentRevision(
 	pg: PGPoolClient,
-	rev: Revision
+	rev: Revision,
 ): Promise<void> {
 	const current = await currentRevision(pg)
 
@@ -85,7 +85,7 @@ async function setCurrentRevision(
                 INSERT INTO ${REVISION_TABLE}(${REVISION_COLUMN})
                 VALUES ($1)
             `,
-			[rev.id]
+			[rev.id],
 		)
 	} else {
 		await pg.query(
@@ -93,14 +93,14 @@ async function setCurrentRevision(
                 UPDATE ${REVISION_TABLE}
                 SET    ${REVISION_COLUMN} = $1
             `,
-			[rev.id]
+			[rev.id],
 		)
 	}
 }
 
 function revisionsToApply(
 	current: number | null,
-	direction: "up" | "down"
+	direction: "up" | "down",
 ): Revision[] {
 	switch (direction) {
 		case "up":
@@ -123,7 +123,7 @@ function revisionsToApply(
 export async function migrateUp(
 	logger: Logger,
 	pg: PGPool,
-	doctypes: DocType<any>[]
+	doctypes: DocType<any>[],
 ): Promise<void> {
 	const conn = await pg.connect()
 	const currentRevisionId = await currentRevision(conn)
@@ -181,7 +181,7 @@ export async function migrateDown(logger: Logger, pg: PGPool): Promise<void> {
 export async function ensurePartition(
 	logger: Logger,
 	conn: PGPoolClient,
-	doctype: DocType<any>
+	doctype: DocType<any>,
 ): Promise<void> {
 	logger.info(`Ensuring partition for ${doctype.name}`)
 

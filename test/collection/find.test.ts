@@ -89,7 +89,7 @@ test("collection.find", async (t) => {
 				await foo.findOne({ foo: 1 }).run(tr)
 			},
 			{},
-			"Too many items found"
+			"Too many items found",
 		)
 	})
 
@@ -113,7 +113,7 @@ test("collection.find", async (t) => {
 				await foo.findById("unknown-id").run(tr)
 			},
 			{},
-			"Model not found: unknown-id"
+			"Model not found: unknown-id",
 		)
 	})
 
@@ -247,7 +247,7 @@ test("collection.find", async (t) => {
 						["foo", "ASC"],
 						["bar", "DESC"],
 					],
-				}
+				},
 			)
 			.run(tr)
 
@@ -302,7 +302,7 @@ test("collection.find", async (t) => {
 								{ foo: 5, bar: 4 },
 							])
 						})
-						.transact(tr)
+						.transact(tr),
 				)
 			})
 			.transact(tr)

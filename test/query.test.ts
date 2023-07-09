@@ -120,5 +120,5 @@ testCases.forEach(([query, expected]) =>
 		const actual = whereClause<Entity>(query)
 		t.same(actual, expected)
 		t.end()
-	})
+	}),
 )

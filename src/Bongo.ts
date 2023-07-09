@@ -47,7 +47,7 @@ export class Bongo {
 	}
 
 	public collection<S extends SchemaTypeDef>(
-		doctype: DocType<S>
+		doctype: DocType<S>,
 	): Collection<SchemaType<S>> {
 		if (this.collectionRegistry.has(doctype.name)) {
 			const col = this.collectionRegistry.get(doctype.name) as Collection<
@@ -57,11 +57,11 @@ export class Bongo {
 			if (
 				!deepEquals(
 					doctype.schema,
-					this.doctypeRegistry.get(doctype.name)?.schema
+					this.doctypeRegistry.get(doctype.name)?.schema,
 				)
 			) {
 				throw new Error(
-					`Doctype ${doctype.name} already registered with different schema`
+					`Doctype ${doctype.name} already registered with different schema`,
 				)
 			}
 
@@ -71,7 +71,7 @@ export class Bongo {
 		if (doctype.prefix) {
 			if (doctype.prefix.length > 3) {
 				throw new Error(
-					`Id prefix cannot be longer than 3 characters: ${doctype.prefix}`
+					`Id prefix cannot be longer than 3 characters: ${doctype.prefix}`,
 				)
 			}
 
@@ -99,7 +99,7 @@ export class Bongo {
 		await migrateUp(
 			this.logger,
 			this.pg,
-			Array.from(this.doctypeRegistry.values())
+			Array.from(this.doctypeRegistry.values()),
 		)
 	}
 
