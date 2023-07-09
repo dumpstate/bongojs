@@ -180,7 +180,7 @@ test("Bongo", async (t) => {
 			() =>
 				bongo.collection({
 					name: "foo",
-					prefix: "foo",
+					prefix: "f",
 					schema: {
 						foo: { type: "int32" },
 					} as const,

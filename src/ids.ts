@@ -5,12 +5,12 @@ const ALPHABET =
 	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 const ALPHABET_LENGTH = ALPHABET.length
 
-let idGenerator: (len: number) => string
+let idGenerator: () => string
 
-function doNotUseNextId(len: number) {
+function doNotUseNextId() {
 	let id = ""
 
-	for (let i = 0; i < len; i++) {
+	for (let i = 0; i < ID_LENGTH; i++) {
 		id += ALPHABET.charAt(Math.floor(Math.random() * ALPHABET_LENGTH))
 	}
 
@@ -19,7 +19,7 @@ function doNotUseNextId(len: number) {
 
 function newIdGenerator() {
 	try {
-		return require("nanoid").nanoid
+		return require("ulid").ulid
 	} catch {
 		return doNotUseNextId
 	}
@@ -31,10 +31,8 @@ export function nextId<T extends SchemaTypeDef>(doctype: DocType<T>): string {
 	}
 
 	if (doctype.prefix) {
-		return `${doctype.prefix}_${idGenerator(
-			ID_LENGTH - doctype.prefix.length - 1,
-		)}`
+		return `${doctype.prefix}_${idGenerator()}`
 	}
 
-	return idGenerator(ID_LENGTH)
+	return idGenerator()
 }

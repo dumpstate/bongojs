@@ -38,6 +38,19 @@ ON ${DOCUMENT_TABLE}
 USING GIN (doc)`.trim(),
 		down: `DROP INDEX IF EXISTS ix_${DOCUMENT_TABLE}_doc`,
 	},
+	{
+		id: 4,
+		up: `
+ALTER TABLE ${DOCUMENT_TABLE}
+ALTER COLUMN id
+SET DATA TYPE CHAR(30)
+`.trim(),
+		down: `
+ALTER TABLE ${DOCUMENT_TABLE}
+ALTER COLUMN id
+SET DATA TYPE CHAR(24)
+`,
+	},
 ]
 
 async function checkTableExists(

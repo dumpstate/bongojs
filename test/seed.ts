@@ -1,4 +1,4 @@
-import { nanoid } from "nanoid"
+import { ulid } from "ulid"
 
 import { Bongo, Schema } from "../src/index"
 
@@ -54,8 +54,8 @@ const Task = {
 } as const
 type TaskType = Schema<typeof Task>
 
-function nextStr(len: number = 10): string {
-	return nanoid(len)
+function nextStr(): string {
+	return ulid()
 }
 
 function nextUser(): UserType {
