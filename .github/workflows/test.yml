@@ -18,7 +18,6 @@ jobs:
               run: docker-compose up -d
             - name: Install Dependencies
               run: |
-                  npm config set '@dumpstate:registry' 'https://npm.pkg.github.com'
                   npm config set '//npm.pkg.github.com/:_authToken' "${TOKEN}"
                   npm install
               env:
