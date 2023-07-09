@@ -1,10 +1,11 @@
+import assert from "node:assert/strict"
 import { chain, sequence } from "@dumpstate/dbaction/lib/PG"
 import { Pool } from "pg"
-import { test } from "tap"
 import { Bongo } from "../src/Bongo"
 import { nested } from "../src/model"
+import { dropId } from "./utils"
 
-test("Bongo", async (t) => {
+describe("Bongo", async () => {
 	const bongo = new Bongo()
 	const foo = bongo.collection({
 		name: "foo",
@@ -16,20 +17,20 @@ test("Bongo", async (t) => {
 		} as const,
 	})
 
-	t.before(async () => {
+	before(async () => {
 		await bongo.migrate()
 	})
 
-	t.teardown(async () => {
+	after(async () => {
 		await bongo.drop()
 		await bongo.close()
 	})
 
-	t.afterEach(async () => {
+	afterEach(async () => {
 		await foo.drop().run(bongo.tr)
 	})
 
-	await t.test("foo", async (t) => {
+	it("foo", async () => {
 		const newFoo = await foo
 			.create({
 				foo: 42,
@@ -38,17 +39,17 @@ test("Bongo", async (t) => {
 			})
 			.run(bongo.tr)
 
-		t.ok(bongo)
-		t.ok(newFoo.id)
+		assert(bongo)
+		assert(newFoo.id)
 
 		newFoo.foo = 22
 
 		await foo.save(newFoo).run(bongo.tr)
 
-		t.ok(newFoo.foo === 22)
+		assert(newFoo.foo === 22)
 	})
 
-	await t.test("foo with transact", async (t) => {
+	it("foo with transact", async () => {
 		await foo
 			.create({
 				foo: 44,
@@ -62,12 +63,12 @@ test("Bongo", async (t) => {
 			)
 			.transact(bongo.tr)
 
-		t.ok((await foo.find({}).run(bongo.tr)).length === 2)
-		t.ok(await foo.findOne({ foo: 44 }).run(bongo.tr))
-		t.ok(await foo.findOne({ foo: 45 }).run(bongo.tr))
+		assert((await foo.find({}).run(bongo.tr)).length === 2)
+		assert(await foo.findOne({ foo: 44 }).run(bongo.tr))
+		assert(await foo.findOne({ foo: 45 }).run(bongo.tr))
 	})
 
-	await t.test("foo on rollback", async (t) => {
+	it("foo on rollback", async () => {
 		try {
 			await foo
 				.create({
@@ -83,10 +84,10 @@ test("Bongo", async (t) => {
 				.transact(bongo.tr)
 		} catch (_) {}
 
-		t.ok((await foo.find({}).run(bongo.tr)).length == 0)
+		assert((await foo.find({}).run(bongo.tr)).length == 0)
 	})
 
-	await t.test("foo with run and failure", async (t) => {
+	it("foo with run and failure", async () => {
 		try {
 			await foo
 				.create({
@@ -102,11 +103,11 @@ test("Bongo", async (t) => {
 				.run(bongo.tr)
 		} catch (_) {}
 
-		t.ok((await foo.find({}).run(bongo.tr)).length == 1)
-		t.ok(await foo.findOne({ foo: 44 }).run(bongo.tr))
+		assert((await foo.find({}).run(bongo.tr)).length == 1)
+		assert(await foo.findOne({ foo: 44 }).run(bongo.tr))
 	})
 
-	await t.test("foo with chain of actions", async (t) => {
+	it("foo with chain of actions", async () => {
 		const items = await chain(
 			foo.create({ foo: 52, bar: "foo" }),
 			() => foo.findOne({ foo: 52 }),
@@ -120,10 +121,10 @@ test("Bongo", async (t) => {
 			() => foo.find({}),
 		).transact(bongo.tr)
 
-		t.ok(items.length === 2)
+		assert(items.length === 2)
 	})
 
-	await t.test("find foo in a sequence", async (t) => {
+	it("find foo in a sequence", async () => {
 		await foo
 			.createAll([
 				{ foo: 52 },
@@ -135,33 +136,31 @@ test("Bongo", async (t) => {
 			.transact(bongo.tr)
 
 		const items = await sequence(
-			foo.find({ foo: 53 }),
-			foo.find({ foo: 55 }),
-			foo.find({ foo: 52 }),
+			foo.findOne({ foo: 53 }),
+			foo.findOne({ foo: 55 }),
+			foo.findOne({ foo: 52 }),
 		).run(bongo.tr)
 
-		t.ok(items.length === 3)
-		t.match(items[0], [{ foo: 53 }])
-		t.match(items[1], [{ foo: 55 }])
-		t.match(items[2], [{ foo: 52 }])
+		assert.deepEqual(items.map(dropId), [
+			{ foo: 53, bar: undefined, baz: undefined },
+			{ foo: 55, bar: undefined, baz: undefined },
+			{ foo: 52, bar: undefined, baz: undefined },
+		])
 	})
 
-	await t.test(
-		"foo unsafe getters return same as regular getters",
-		async (t) => {
-			const item = await foo
-				.create({
-					foo: 42,
-					bar: "foo",
-				})
-				.transact(bongo.tr)
+	it("foo unsafe getters return same as regular getters", async () => {
+		const item = await foo
+			.create({
+				foo: 42,
+				bar: "foo",
+			})
+			.transact(bongo.tr)
 
-			t.equal(item.foo$, item.foo)
-			t.equal(item.bar$, item.bar)
-		},
-	)
+		assert.equal(item.foo$, item.foo)
+		assert.equal(item.bar$, item.bar)
+	})
 
-	await t.test("return collection if already exists", async (t) => {
+	it("return collection if already exists", async () => {
 		const foo2 = bongo.collection({
 			name: "foo",
 			prefix: "foo",
@@ -172,11 +171,11 @@ test("Bongo", async (t) => {
 			} as const,
 		})
 
-		t.equal(foo2, foo)
+		assert.equal(foo2, foo)
 	})
 
-	await t.test("raise if different schema under same name", async (t) => {
-		t.throws(
+	it("raise if different schema under same name", async () => {
+		assert.throws(
 			() =>
 				bongo.collection({
 					name: "foo",
@@ -190,22 +189,22 @@ test("Bongo", async (t) => {
 	})
 })
 
-test("create bongo for an existing Pool", async (t) => {
+describe("create bongo for an existing Pool", async () => {
 	const bongo = new Bongo(new Pool())
 
-	t.teardown(async () => {
+	after(async () => {
 		await bongo.close()
 	})
 
-	await t.test("pool is usable", async (t) => {
+	it("pool is usable", async () => {
 		const conn = await bongo.pg.connect()
 		const res = await conn.query("select 1")
 		conn.release()
-		t.ok(res)
+		assert(res)
 	})
 })
 
-test("create bongo with collection of discriminated union objects", async (t) => {
+describe("create bongo with collection of discriminated union objects", async () => {
 	const bongo = new Bongo()
 	const baz = bongo.collection({
 		name: "baz",
@@ -229,20 +228,20 @@ test("create bongo with collection of discriminated union objects", async (t) =>
 		} as const,
 	})
 
-	t.before(async () => {
+	before(async () => {
 		await bongo.migrate()
 	})
 
-	t.teardown(async () => {
+	after(async () => {
 		await bongo.drop()
 		await bongo.close()
 	})
 
-	t.afterEach(async () => {
+	afterEach(async () => {
 		await baz.drop().run(bongo.tr)
 	})
 
-	await t.test("baz", async (t) => {
+	it("baz", async () => {
 		const items = await baz
 			.createAll([
 				{
@@ -260,12 +259,12 @@ test("create bongo with collection of discriminated union objects", async (t) =>
 			])
 			.transact(bongo.tr)
 
-		t.match(items[0].baz, { type: "FOO", foo: 44 })
-		t.match(items[1].baz, { type: "BAR", bar: "bar" })
+		assert.deepEqual(items.at(0)?.baz, { type: "FOO", foo: 44 })
+		assert.deepEqual(items.at(1)?.baz, { type: "BAR", bar: "bar" })
 	})
 })
 
-test("create collection with nested document as properties", async (t) => {
+describe("create collection with nested document as properties", async () => {
 	const bongo = new Bongo()
 	const Foo = {
 		name: "foo",
@@ -284,21 +283,21 @@ test("create collection with nested document as properties", async (t) => {
 	const foo = bongo.collection(Foo)
 	const bar = bongo.collection(Bar)
 
-	t.before(async () => {
+	before(async () => {
 		await bongo.migrate()
 	})
 
-	t.teardown(async () => {
+	after(async () => {
 		await bongo.drop()
 		await bongo.close()
 	})
 
-	t.afterEach(async () => {
+	afterEach(async () => {
 		await foo.drop().run(bongo.tr)
 		await bar.drop().run(bongo.tr)
 	})
 
-	await t.test("create document with a nested doc", async (t) => {
+	it("create document with a nested doc", async () => {
 		const fooItem = await foo
 			.create({ foo: "foo-value" })
 			.transact(bongo.tr)
@@ -310,12 +309,18 @@ test("create collection with nested document as properties", async (t) => {
 			.transact(bongo.tr)
 		const actual = await bar.findById(barItem.id).run(bongo.tr)
 
-		t.match(actual, barItem)
-		t.match(actual.nestedFoo$.foo, fooItem.foo$)
+		assert.deepEqual(actual, {
+			bar: barItem.bar$,
+			id: barItem.id,
+			nestedFoo: {
+				foo: fooItem.foo$,
+			},
+		})
+		assert.deepEqual(actual.nestedFoo$.foo, fooItem.foo$)
 	})
 })
 
-test("create collection with nested document as reference", async (t) => {
+describe("create collection with nested document as reference", async () => {
 	const bongo = new Bongo()
 	const Foo = {
 		name: "foo",
@@ -334,21 +339,21 @@ test("create collection with nested document as reference", async (t) => {
 	const foo = bongo.collection(Foo)
 	const bar = bongo.collection(Bar)
 
-	t.before(async () => {
+	before(async () => {
 		await bongo.migrate()
 	})
 
-	t.teardown(async () => {
+	after(async () => {
 		await bongo.drop()
 		await bongo.close()
 	})
 
-	t.afterEach(async () => {
+	afterEach(async () => {
 		await foo.drop().run(bongo.tr)
 		await bar.drop().run(bongo.tr)
 	})
 
-	await t.test("create document with a nested doc", async (t) => {
+	it("create document with a nested doc", async () => {
 		const fooItem = await foo
 			.create({ foo: "foo-value" })
 			.transact(bongo.tr)
@@ -360,8 +365,15 @@ test("create collection with nested document as reference", async (t) => {
 			.transact(bongo.tr)
 		const actual = await bar.findById(barItem.id).run(bongo.tr)
 
-		t.match(actual, barItem)
-		t.match(actual.nestedFoo$.id, fooItem.id)
-		t.match(actual.nestedFoo$.foo, fooItem.foo$)
+		assert.deepEqual(actual, {
+			bar: barItem.bar$,
+			id: barItem.id,
+			nestedFoo: {
+				foo: fooItem.foo$,
+				id: fooItem.id,
+			},
+		})
+		assert.deepEqual(actual.nestedFoo$.id, fooItem.id)
+		assert.deepEqual(actual.nestedFoo$.foo, fooItem.foo$)
 	})
 })

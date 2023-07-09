@@ -1,9 +1,9 @@
+import assert from "node:assert/strict"
 import { pure } from "@dumpstate/dbaction"
-import { test } from "tap"
-
 import { Bongo } from "../../src/Bongo"
+import { dropId } from "../utils"
 
-test("collection.find", async (t) => {
+describe("collection.find", async () => {
 	const bongo = new Bongo()
 	const tr = bongo.tr
 	const foo = bongo.collection({
@@ -14,44 +14,48 @@ test("collection.find", async (t) => {
 		} as const,
 	})
 
-	t.before(async () => {
+	before(async () => {
 		await bongo.migrate()
 	})
 
-	t.afterEach(async () => {
+	afterEach(async () => {
 		await foo.drop().run(tr)
 	})
 
-	t.teardown(async () => {
+	after(async () => {
 		await bongo.drop()
 		await bongo.close()
 	})
 
-	await t.test("returns one matching item", async (t) => {
+	it("returns one matching item", async () => {
 		await foo.createAll([{ foo: 10 }, { foo: 11 }, { foo: 12 }]).run(tr)
 
 		const found = await foo.find({ foo: 11 }).run(tr)
 
-		t.match(found, [{ foo: 11 }])
+		assert.deepEqual(found.map(dropId), [{ foo: 11, bar: undefined }])
 	})
 
-	await t.test("returns all items when empty query", async (t) => {
+	it("returns all items when empty query", async () => {
 		await foo.createAll([{ foo: 1 }, { foo: 2 }, { foo: 3 }]).run(tr)
 
 		const found = await foo.find({}).run(tr)
 
-		t.match(found, [{ foo: 1 }, { foo: 2 }, { foo: 3 }])
+		assert.deepEqual(found.map(dropId), [
+			{ foo: 1, bar: undefined },
+			{ foo: 2, bar: undefined },
+			{ foo: 3, bar: undefined },
+		])
 	})
 
-	await t.test("returns empty array when no matches", async (t) => {
+	it("returns empty array when no matches", async () => {
 		await foo.createAll([{ foo: 1 }, { foo: 2 }]).run(tr)
 
 		const found = await foo.find({ foo: 3 }).run(tr)
 
-		t.equal(found.length, 0)
+		assert.equal(found.length, 0)
 	})
 
-	await t.test("returns multiple matching items", async (t) => {
+	it("returns multiple matching items", async () => {
 		await foo
 			.createAll([
 				{ foo: 1, bar: 1 },
@@ -65,26 +69,26 @@ test("collection.find", async (t) => {
 
 		const found = await foo.find({ foo: 1 }).run(tr)
 
-		t.match(found, [
+		assert.deepEqual(found.map(dropId), [
 			{ foo: 1, bar: 1 },
 			{ foo: 1, bar: 3 },
 			{ foo: 1, bar: 5 },
-			{ foo: 1 },
+			{ foo: 1, bar: undefined },
 		])
 	})
 
-	await t.test("findOne returns null when not found", async (t) => {
+	it("findOne returns null when not found", async () => {
 		await foo.createAll([{ foo: 1 }, { foo: 2 }]).run(tr)
 
 		const found = await foo.findOne({ foo: 10 }).run(tr)
 
-		t.equal(found, null)
+		assert.equal(found, null)
 	})
 
-	await t.test("findOne throws when more than one found", async (t) => {
+	it("findOne throws when more than one found", async () => {
 		await foo.createAll([{ foo: 1 }, { foo: 2 }, { foo: 1 }]).run(tr)
 
-		t.rejects(
+		assert.rejects(
 			async () => {
 				await foo.findOne({ foo: 1 }).run(tr)
 			},
@@ -93,22 +97,23 @@ test("collection.find", async (t) => {
 		)
 	})
 
-	await t.test("findById returns matching item", async (t) => {
+	it("findById returns matching item", async () => {
 		await foo.createAll([{ foo: 1 }, { foo: 2 }]).run(tr)
 		const { id } = await foo.create({ foo: 3 }).run(tr)
 
 		const found = await foo.findById(id).run(tr)
 
-		t.match(found, {
+		assert.deepEqual(found, {
 			id,
 			foo: 3,
+			bar: undefined,
 		})
 	})
 
-	await t.test("findById throws when element not found", async (t) => {
+	it("findById throws when element not found", async () => {
 		await foo.createAll([{ foo: 1 }, { foo: 2 }]).run(tr)
 
-		t.rejects(
+		assert.rejects(
 			async () => {
 				await foo.findById("unknown-id").run(tr)
 			},
@@ -117,7 +122,7 @@ test("collection.find", async (t) => {
 		)
 	})
 
-	await t.test("find with an alternative", async (t) => {
+	it("find with an alternative", async () => {
 		await foo
 			.createAll([
 				{ foo: 1 },
@@ -134,10 +139,14 @@ test("collection.find", async (t) => {
 			})
 			.run(tr)
 
-		t.match(actual, [{ foo: 1 }, { foo: 3, bar: 3 }, { foo: 4, bar: 3 }])
+		assert.deepEqual(actual.map(dropId), [
+			{ foo: 1, bar: undefined },
+			{ foo: 3, bar: 3 },
+			{ foo: 4, bar: 3 },
+		])
 	})
 
-	await t.test("find with greater than matcher", async (t) => {
+	it("find with greater than matcher", async () => {
 		await foo
 			.createAll([
 				{ foo: 1 },
@@ -154,10 +163,10 @@ test("collection.find", async (t) => {
 			})
 			.run(tr)
 
-		t.match(actual, [{ foo: 3, bar: 4 }])
+		assert.deepEqual(actual.map(dropId), [{ foo: 3, bar: 4 }])
 	})
 
-	await t.test("find with $in matcher", async (t) => {
+	it("find with $in matcher", async () => {
 		await foo
 			.createAll([
 				{ foo: 1 },
@@ -174,26 +183,36 @@ test("collection.find", async (t) => {
 			})
 			.run(tr)
 
-		t.match(actual, [{ foo: 2 }, { foo: 2, bar: 4 }, { foo: 3 }])
+		assert.deepEqual(actual.map(dropId), [
+			{ foo: 2, bar: undefined },
+			{ foo: 2, bar: 4 },
+			{ foo: 3, bar: undefined },
+		])
 	})
 
-	await t.test("find with limit", async (t) => {
+	it("find with limit", async () => {
 		await foo.createAll([{ foo: 1 }, { foo: 2 }, { foo: 3 }]).transact(tr)
 
 		const actual = await foo.find({}, { limit: 2 }).run(tr)
 
-		t.match(actual, [{ foo: 1 }, { foo: 2 }])
+		assert.deepEqual(actual.map(dropId), [
+			{ foo: 1, bar: undefined },
+			{ foo: 2, bar: undefined },
+		])
 	})
 
-	await t.test("find with offset and limit", async (t) => {
+	it("find with offset and limit", async () => {
 		await foo.createAll([{ foo: 1 }, { foo: 2 }, { foo: 3 }]).transact(tr)
 
 		const actual = await foo.find({}, { limit: 3, offset: 1 }).run(tr)
 
-		t.match(actual, [{ foo: 2 }, { foo: 3 }])
+		assert.deepEqual(actual.map(dropId), [
+			{ foo: 2, bar: undefined },
+			{ foo: 3, bar: undefined },
+		])
 	})
 
-	await t.test("find with sort, ascending", async (t) => {
+	it("find with sort, ascending", async () => {
 		await foo
 			.createAll([
 				{ foo: 1, bar: 2 },
@@ -204,14 +223,14 @@ test("collection.find", async (t) => {
 
 		const actual = await foo.find({}, { sort: [["bar", "ASC"]] }).run(tr)
 
-		t.match(actual, [
+		assert.deepEqual(actual.map(dropId), [
 			{ foo: 2, bar: 1 },
 			{ foo: 1, bar: 2 },
 			{ foo: 3, bar: 3 },
 		])
 	})
 
-	await t.test("find with sort, descending", async (t) => {
+	it("find with sort, descending", async () => {
 		await foo
 			.createAll([
 				{ foo: 1, bar: 2 },
@@ -222,14 +241,14 @@ test("collection.find", async (t) => {
 
 		const actual = await foo.find({}, { sort: [["bar", "DESC"]] }).run(tr)
 
-		t.match(actual, [
+		assert.deepEqual(actual.map(dropId), [
 			{ foo: 3, bar: 3 },
 			{ foo: 1, bar: 2 },
 			{ foo: 1, bar: 1 },
 		])
 	})
 
-	await t.test("find with sort, multiple props", async (t) => {
+	it("find with sort, multiple props", async () => {
 		await foo
 			.createAll([
 				{ foo: 3, bar: 2 },
@@ -251,7 +270,7 @@ test("collection.find", async (t) => {
 			)
 			.run(tr)
 
-		t.match(actual, [
+		assert.deepEqual(actual.map(dropId), [
 			{ foo: 1, bar: 4 },
 			{ foo: 1, bar: 1 },
 			{ foo: 2, bar: 3 },
@@ -259,7 +278,7 @@ test("collection.find", async (t) => {
 		])
 	})
 
-	await t.test("count should count rows", async (t) => {
+	it("count should count rows", async () => {
 		await foo
 			.createAll([
 				{ foo: 3, bar: 1 },
@@ -272,10 +291,10 @@ test("collection.find", async (t) => {
 
 		const actual = await foo.count({ foo: 3 }).run(tr)
 
-		t.equal(actual, 3)
+		assert.equal(actual, 3)
 	})
 
-	await t.test("should lock rows when requested", async (t) => {
+	it("should lock rows when requested", async () => {
 		await foo
 			.createAll([
 				{ foo: 3, bar: 1 },
@@ -288,7 +307,7 @@ test("collection.find", async (t) => {
 		await foo
 			.find({}, { limit: 2, forUpdate: true })
 			.flatMap((actualFirst) => {
-				t.match(actualFirst, [
+				assert.deepEqual(actualFirst.map(dropId), [
 					{ foo: 3, bar: 1 },
 					{ foo: 3, bar: 2 },
 				])
@@ -297,7 +316,7 @@ test("collection.find", async (t) => {
 					foo
 						.find({}, { limit: 2, forUpdate: true })
 						.map((actualSecond) => {
-							t.match(actualSecond, [
+							assert.deepEqual(actualSecond.map(dropId), [
 								{ foo: 4, bar: 3 },
 								{ foo: 5, bar: 4 },
 							])
@@ -309,7 +328,7 @@ test("collection.find", async (t) => {
 	})
 })
 
-test("collection.find by timestamp", async (t) => {
+describe("collection.find by timestamp", async () => {
 	const bongo = new Bongo()
 	const foo = bongo.collection({
 		name: "doc:foo:find:timestamp",
@@ -319,18 +338,18 @@ test("collection.find by timestamp", async (t) => {
 		} as const,
 	})
 
-	t.before(async () => {
+	before(async () => {
 		await bongo.migrate()
 	})
-	t.afterEach(async () => {
+	afterEach(async () => {
 		await foo.drop().run(bongo.tr)
 	})
-	t.teardown(async () => {
+	after(async () => {
 		await bongo.drop()
 		await bongo.close()
 	})
 
-	await t.test("creates with timestamps", async (t) => {
+	it("creates with timestamps", async () => {
 		const date = new Date()
 		const dateStr = date.toISOString()
 
@@ -342,13 +361,13 @@ test("collection.find by timestamp", async (t) => {
 			.transact(bongo.tr)
 
 		const found = await foo.find({}).run(bongo.tr)
-		t.match(found, [
+		assert.deepEqual(found.map(dropId), [
 			{ createdAt: dateStr, value: 1 },
 			{ createdAt: dateStr, value: 2 },
 		])
 	})
 
-	await t.test("finds with exact match on ISO string", async (t) => {
+	it("finds with exacassert.deepEqual on ISO string", async () => {
 		const date = new Date()
 
 		await foo
@@ -361,10 +380,12 @@ test("collection.find by timestamp", async (t) => {
 		const found = await foo
 			.find({ createdAt: date.toISOString() })
 			.run(bongo.tr)
-		t.match(found, [{ createdAt: date.toISOString(), value: 1 }])
+		assert.deepEqual(found.map(dropId), [
+			{ createdAt: date.toISOString(), value: 1 },
+		])
 	})
 
-	await t.test("finds with exact match on Date object", async (t) => {
+	it("finds with exacassert.deepEqual on Date object", async () => {
 		const date = new Date()
 
 		await foo
@@ -375,10 +396,12 @@ test("collection.find by timestamp", async (t) => {
 			.transact(bongo.tr)
 
 		const found = await foo.find({ createdAt: date }).run(bongo.tr)
-		t.match(found, [{ createdAt: date.toISOString(), value: 1 }])
+		assert.deepEqual(found.map(dropId), [
+			{ createdAt: date.toISOString(), value: 1 },
+		])
 	})
 
-	await t.test("finds with lt/gt comparison", async (t) => {
+	it("finds with lt/gt comparison", async () => {
 		const date = new Date()
 		const ts1 = new Date(date.getTime() - 10000)
 		const ts2 = date
@@ -431,7 +454,7 @@ test("collection.find by timestamp", async (t) => {
 
 		for (const { query, expected } of cases) {
 			const found = await foo.find(query).run(bongo.tr)
-			t.match(found, expected)
+			assert.deepEqual(found.map(dropId), expected)
 		}
 	})
 })

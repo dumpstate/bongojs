@@ -1,6 +1,6 @@
 {
 	"name": "@dumpstate/bongojs",
-	"version": "0.24.0",
+	"version": "0.24.1",
 	"description": "PostgreSQL JSON document modeling tool for node.js",
 	"main": "lib/index.js",
 	"bin": {
@@ -8,37 +8,35 @@
 	},
 	"scripts": {
 		"build": "tsc --project tsconfig.json",
-		"build:test": "tsc --project test.tsconfig.json",
-		"lint": "npm run style:check",
+		"lint": "prettier --check .",
 		"prepublish": "npm run build",
-		"style:check": "prettier --check .",
 		"style:fix": "prettier --write .",
-		"test": "npm run build:test && PGUSER=bongo PGHOST=localhost PGDATABASE=bongo_db tap libtest/test/*.test.js libtest/test/**/*.test.js"
+		"test": "PGUSER=bongo PGHOST=localhost PGDATABASE=bongo_db mocha --require ts-node/register test/*.test.ts test/**/*.test.ts"
 	},
 	"author": "Albert Sadowski <asadowski@mailbox.org>",
 	"license": "MIT",
 	"devDependencies": {
-		"@types/pg": "8.10.2",
-		"@types/tap": "15.0.8",
-		"ulid": "2.3.0",
-		"pg": "8.11.1",
-		"prettier": "3.0.0",
-		"tap": "16.3.7",
-		"typescript": "5.1.6"
+		"@types/lodash": "^4.14.195",
+		"@types/mocha": "^10.0.1",
+		"@types/pg": "^8.10.2",
+		"lodash": "^4.17.21",
+		"mocha": "^10.2.0",
+		"pg": "^8.11.1",
+		"prettier": "^3.0.0",
+		"ts-node": "^10.9.1",
+		"typescript": "^5.1.6",
+		"ulid": "^2.3.0"
 	},
 	"peerDependencies": {
 		"pg": "8.x"
 	},
 	"dependencies": {
-		"@dumpstate/dbaction": "^0.2.2",
+		"@dumpstate/dbaction": "^0.2.5",
 		"ajv": "^8.12.0"
 	},
 	"optionalDependencies": {
 		"pino": "^8.14.1",
 		"ulid": "^2.3.0"
-	},
-	"tap": {
-		"check-coverage": false
 	},
 	"publishConfig": {
 		"registry": "https://npm.pkg.github.com/",

@@ -118,7 +118,7 @@ export function collection<S extends SchemaTypeDef, T>(
 			withUnsafeGetters({
 				...defaultOptionalProps,
 				...(doc as any),
-				id,
+				id: id.trim(),
 			}),
 		)
 	}

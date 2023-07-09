@@ -1,6 +1,5 @@
-import { test } from "tap"
+import assert from "node:assert/strict"
 import { Schema } from "../src/model"
-
 import { Query, SqlClause, whereClause } from "../src/query"
 
 const Entity = {
@@ -115,10 +114,11 @@ const testCases: [Query<Entity>, SqlClause][] = [
 	],
 ]
 
-testCases.forEach(([query, expected]) =>
-	test("query builder", (t) => {
-		const actual = whereClause<Entity>(query)
-		t.same(actual, expected)
-		t.end()
-	}),
-)
+describe("query builder", () => {
+	testCases.forEach(([query, expected]) =>
+		it("should build query", () => {
+			const actual = whereClause<Entity>(query)
+			assert.deepEqual(actual, expected)
+		}),
+	)
+})

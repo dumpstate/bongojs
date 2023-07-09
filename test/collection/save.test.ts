@@ -1,7 +1,8 @@
-import { test } from "tap"
+import assert from "node:assert/strict"
 import { Bongo } from "../../src/Bongo"
+import { dropId } from "../utils"
 
-test("collection.save", async (t) => {
+describe("collection.save", () => {
 	const bongo = new Bongo()
 	const { tr } = bongo
 	const foo = bongo.collection({
@@ -14,20 +15,20 @@ test("collection.save", async (t) => {
 		} as const,
 	})
 
-	t.before(async () => {
+	before(async () => {
 		await bongo.migrate()
 	})
 
-	t.afterEach(async () => {
+	afterEach(async () => {
 		await foo.drop().run(tr)
 	})
 
-	t.teardown(async () => {
+	after(async () => {
 		await bongo.drop()
 		await bongo.close()
 	})
 
-	await t.test("save updates the object", async (t) => {
+	it("save updates the object", async () => {
 		const obj = await foo
 			.create({
 				foo: 42,
@@ -40,10 +41,10 @@ test("collection.save", async (t) => {
 
 		const actual = await foo.findOne({ foo: 42 }).run(tr)
 
-		t.match(actual, { foo: 42, bar: 44 })
+		assert.deepEqual(dropId(actual), { foo: 42, bar: 44 })
 	})
 
-	await t.test("save updates with missing optional property", async (t) => {
+	it("save updates with missing optional property", async () => {
 		const obj = await foo
 			.create({
 				foo: 42,
@@ -55,6 +56,6 @@ test("collection.save", async (t) => {
 
 		const actual = await foo.findOne({ foo: 42 }).run(tr)
 
-		t.match(actual, { foo: 42, bar: 44 })
+		assert.deepEqual(dropId(actual), { foo: 42, bar: 44 })
 	})
 })
