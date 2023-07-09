@@ -2,8 +2,6 @@
 
 import { join } from "path"
 
-import minimist from "minimist"
-
 import { Bongo } from "./Bongo"
 
 function loadBongo(path?: string): Bongo {
@@ -64,16 +62,15 @@ function usage() {
 }
 
 async function main() {
-	const argv = minimist(process.argv.slice(2))
-
-	if (argv._.length < 2 || argv._[0] !== "migrate") {
+	const argv = process.argv.slice(2)
+	if (argv.length < 2 || argv.at(0) !== "migrate") {
 		usage()
 		process.exit(1)
 	}
 
-	const path = argv._.length > 2 ? argv._[2] : undefined
+	const path = argv.at(2)
 
-	switch (argv._[1]) {
+	switch (argv.at(1)) {
 		case "up":
 			await migrateUp(path)
 			break
