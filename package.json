@@ -1,6 +1,6 @@
 {
 	"name": "@dumpstate/bongojs",
-	"version": "0.24.1",
+	"version": "0.24.2",
 	"description": "PostgreSQL JSON document modeling tool for node.js",
 	"main": "lib/index.js",
 	"bin": {

@@ -10,14 +10,14 @@ interface Revision {
 	readonly down: string
 }
 
-const REVISIONS: Revision[] = [
+export const REVISIONS: Revision[] = [
 	{
 		id: 1,
 		up: `
 CREATE TABLE IF NOT EXISTS ${REVISION_TABLE} (
 ${REVISION_COLUMN} INTEGER PRIMARY KEY
 )`.trim(),
-		down: `DROP TABLE ${REVISION_TABLE}`,
+		down: `DROP TABLE IF EXISTS ${REVISION_TABLE}`,
 	},
 	{
 		id: 2,
@@ -28,7 +28,7 @@ doctype VARCHAR,
 doc JSONB NOT NULL,
 PRIMARY KEY (id, doctype)
 ) PARTITION BY LIST(doctype)`.trim(),
-		down: `DROP TABLE ${DOCUMENT_TABLE}`,
+		down: `DROP TABLE IF EXISTS ${DOCUMENT_TABLE}`,
 	},
 	{
 		id: 3,
@@ -83,7 +83,7 @@ async function currentRevision(pg: PGPoolClient): Promise<number | null> {
         FROM ${REVISION_TABLE}
     `)
 
-	return res.rowCount === 1 ? res.rows[0]["max"] : null
+	return res.rowCount === 1 ? res.rows[0][REVISION_COLUMN] : null
 }
 
 async function setCurrentRevision(
@@ -178,7 +178,9 @@ export async function migrateDown(logger: Logger, pg: PGPool): Promise<void> {
 				await conn.query("BEGIN")
 				logger.info(`DOWN(${rev.id}) :: ${rev.down}`)
 				await conn.query(rev.down)
-				await setCurrentRevision(conn, rev)
+				if (rev.id !== 1) {
+					await setCurrentRevision(conn, rev)
+				}
 				await conn.query("COMMIT")
 			} catch (err: any) {
 				await conn.query("ROLLBACK")
