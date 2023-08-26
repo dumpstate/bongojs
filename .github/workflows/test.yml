@@ -14,16 +14,15 @@ jobs:
 
         steps:
             - uses: actions/checkout@v2
+            - uses: pnpm/action-setup@v2
+              with:
+                  version: 8
             - name: Start Docker Compose
               run: docker-compose up -d
             - name: Install Dependencies
-              run: |
-                  npm config set '//npm.pkg.github.com/:_authToken' "${TOKEN}"
-                  npm install
-              env:
-                  TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: pnpm install
             - name: Build
-              run: npm run build && npm link
+              run: pnpm build
             - name: Apply DB Migrations
               env:
                   PGUSER: bongo
@@ -31,6 +30,6 @@ jobs:
                   PGDATABASE: bongo_db
               run: bongojs migrate up
             - name: Lint
-              run: npm run lint
+              run: pnpm lint
             - name: Test
-              run: npm run test
+              run: pnpm test

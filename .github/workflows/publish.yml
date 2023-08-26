@@ -12,10 +12,13 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
+            - uses: pnpm/action-setup@v2
+              with:
+                  version: 8
 
             - run: |
-                  npm config set //registry.npmjs.org/:_authToken=${NPM_TOKEN}
-                  npm ci
-                  npm publish
+                  pnpm config set //registry.npmjs.org/:_authToken=${NPM_TOKEN}
+                  pnpm install
+                  pnpm publish
               env:
                   NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
