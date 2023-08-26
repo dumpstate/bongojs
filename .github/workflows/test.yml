@@ -22,7 +22,7 @@ jobs:
             - name: Install Dependencies
               run: pnpm install
             - name: Build
-              run: pnpm build
+              run: pnpm build && pnpm link --global
             - name: Apply DB Migrations
               env:
                   PGUSER: bongo
