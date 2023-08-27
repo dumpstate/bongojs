@@ -6,8 +6,8 @@ settings:
 
 dependencies:
     "@dumpstate/dbaction":
-        specifier: ^0.2.6
-        version: 0.2.6
+        specifier: ^0.2.7
+        version: 0.2.7
     ajv:
         specifier: ^8.12.0
         version: 8.12.0
@@ -60,11 +60,12 @@ packages:
             "@jridgewell/trace-mapping": 0.3.9
         dev: true
 
-    /@dumpstate/dbaction@0.2.6:
+    /@dumpstate/dbaction@0.2.7:
         resolution:
             {
-                integrity: sha512-LNoAjhqXYpXMFxFz2HCLKWNQUEcVEtH4W1WRdkiv4Dp+bHA/UD/ZDT/WGQ/YKFngYs3LO2IFdCckbAUAp0thkA==,
+                integrity: sha512-l+1QUxywfSMTAKB7P5DksBDS2vTm7Kt9pOwajfNYgRAy4z+qZ96juhbdzttOTAah8sFHNdPPoAm8X2Eakv1VWw==,
             }
+        engines: { node: ">=18", pnpm: ">=8" }
         optionalDependencies:
             pg: 8.11.3
         transitivePeerDependencies:
